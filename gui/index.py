@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QMenu
 from PyQt5.QtGui import QPixmap, QImage, QFont, QGuiApplication, QMouseEvent
 from PyQt5.QtCore import Qt
 from modules.operations import Operations
