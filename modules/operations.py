@@ -1,13 +1,20 @@
 from dataclasses import dataclass
-from PyQt5.QtGui import QImage
+from lib2to3.pgen2.token import OP
+from PyQt5.QtGui import QImage, QColor
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtCore import QPoint
 import numpy as np
 # import libkayn as kayn
+from gui.window.types import OPCODE, Point
 import gui.qt_override as qto
 
 
 @dataclass
 class Operations:
     img: QImage
+
+    def set_img(self, img: QImage):
+        self.img = img
 
     def get_img_pixels(self, w, h):
         bits = np.array(self.img.bits().asarray(w * h * 4))
@@ -28,7 +35,8 @@ class Operations:
         image = self.get_img_pixels(w, h)
         filtered = np.array(filter_func(image, **kwargs),
                             dtype=np.uint8).astype(np.uint8)
-        return QImage(filtered, w, h, QImage.Format.Format_RGBA8888)
+        self.img = QImage(filtered, w, h, QImage.Format.Format_RGBA8888)
+        return self.img
 
     def area_filter(self, function: callable, mask_side, **kwargs) -> QImage:
         w, h = self.img.width(), self.img.height()
@@ -38,18 +46,30 @@ class Operations:
         result = result.reshape(h, w, 4)
 
         new_w, new_h = w - mask_side + 1, h - mask_side + 1
-        return QImage(result, new_w, new_h, QImage.Format.Format_RGBA8888)
+        self.img = QImage(result, new_w, new_h, QImage.Format.Format_RGBA8888)
+        return self.img
+
+    def draw_line(self, p0: Point, p1: Point):
+        pass
 
 
-class CG(Operations):
-    def __init__(self, img: QImage):
-        super().__init__(img)
+class CG():
+    def __init__(self, canvas: QLabel):
+        self.canvas = canvas
+        self.f = Operations(None)
 
-    def apply_operation(self, filter: str):
-        all_operations = {"Line...": lambda: f.grayscale()}
-        image = qto.get_image_from_canvas(self.canvas)
-        f = Operations(image)
-        if filter in all_operations:
-            output = all_operations[filter]()
+    def apply(self, code: int, **kwargs):
+        all_operations = {OPCODE.DRAW_LINE: self.f.draw_line}
+
+        if code in all_operations:
+            self.update_reference_image()
+            output = all_operations[code](**kwargs)
             self.update_canvas(output)
+
+    def update_reference_image(self):
+        image = qto.get_image_from_canvas(self.canvas)
+        self.f.set_img(image)
+
+    def update_canvas(self, image: QImage):
+        qto.put_image_on_canvas(self.canvas, image)
         return
