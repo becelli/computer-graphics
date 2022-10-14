@@ -50,7 +50,19 @@ class Operations:
         return self.img
 
     def draw_line(self, p0: Point, p1: Point):
-        pass
+        import random
+
+        print(p0, p1)
+        w, h = self.img.width(), self.img.height()
+
+        for i in range(100):
+            x1, y1 = random.randint(0, w), random.randint(0, h)
+            x2, y2 = random.randint(0, w), random.randint(0, h)
+            rgb = QColor(200, 255, 255)
+            self.img.setPixel(x1, y1, rgb.rgba())
+            self.img.setPixel(x2, y2, rgb.rgba())
+
+        return self.img
 
 
 class CG():
