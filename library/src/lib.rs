@@ -12,7 +12,7 @@ fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> PyResult<Image>
 
 #[pyfunction]
 fn bresenham_line_algorithm(image: Image, p0: Point, p1: Point, color: Rgba) -> PyResult<Image> {
-    Ok(operations:: bresenham_algorithm(image, p0, p1, color))
+    Ok(operations:: bresenham_line_algorithm(image, p0, p1, color))
 }
 
 #[pymodule]
