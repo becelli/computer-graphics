@@ -1,5 +1,5 @@
 use crate::common::*;
-
+//use crate::nalgebra;
 // use crate::transformations;
 // use std::thread;
 
@@ -54,28 +54,6 @@ pub fn bresenham_line_algorithm(image: Image, p0: Point, p1: Point, color: Rgba)
     let delta_y:i32 = (p1.1 - p0.1) as i32;
     if delta_x.abs() >= delta_y.abs(){
         if delta_x >= 0{
-            /*bresenham algo for first octet
-            let mut yp:i32 = p0.1 as i32;
-            if delta_y >= 0{
-                increment = 1;
-            }else{
-                increment = -1;
-            }
-            //first or eighth octet
-            let mut d:i32 = (2*(p1.1-p0.1) - (p1.0-p0.0)) as i32;
-            for i in p0.0 .. p1.0{
-                if d>0{
-                    let new_point: Point = (i, yp as u32);
-                    new_image[new_point.0 as usize][new_point.1 as usize] = color;
-                    d += (p1.1-p0.1) as i32;
-                }else{
-                    yp+=increment;
-                    let new_point: Point = (i, yp as u32);
-                    new_image[new_point.0 as usize][new_point.1 as usize] = color;
-                    d += ((p1.1-p0.1) + (p1.0-p0.0)) as i32;
-                }
-            }
-            */
             //first or eighth octet
             increment_x = 1;
             if delta_y >= 0{
@@ -141,5 +119,63 @@ pub fn bresenham_line_algorithm(image: Image, p0: Point, p1: Point, color: Rgba)
             i+=increment_y;
         }
     }
+    new_image
+}
+
+pub fn calculate_radius(p0:Point, p1:Point) -> i32{
+    let delta_x:i32 = (p1.0-p0.0) as i32;
+    let delta_y:i32 = (p1.1-p0.1) as i32;
+    let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f64).sqrt();
+    let int_radius = (radius).floor() as i32;
+    int_radius
+}
+
+//p0 is the center, p1 is a point which belongs to the circunference
+pub fn draw_circunference(image: Image, p0: Point, p1: Point, color: Rgba) -> Image{
+    let mut new_image: Image = image.clone();
+    let radius = calculate_radius(p0, p1);
+    
+    for x in -1*radius .. radius{
+        let x_circunference:i32 = p0.0 - x;
+        let temp_y:i32 = (radius.pow(2) + x.pow(2)).sqrt();
+        //reminder: an higher y implies in a lower pixel position
+        let y_upper:i32 = p0.1 - temp_y;
+        let y_lower:i32 = p0.1 + temp_y;
+
+        //do not draw if the circunference surpass the images boundaries    
+        if !(x_circunference > image.len()|| x_circunference < 0 || y_upper < 0 || y_lower > image[0].len()){
+            //draws the upper and lower half of the circunference
+            let new_point_1: Point = (x_circunference as u32, y_upper as u32);
+            new_image[new_point_1.0 as usize][new_point_1.1 as usize] = color;
+
+            let new_point_2: Point = (x_circunference as u32, y_lower as u32);
+            new_image[new_point_2.0 as usize][new_point_2.1 as usize] = color;            
+        }
+    }
+    new_image
+}
+
+pub fn parametric_circunference(image: Image, p0: Point, p1: Point, color: Rgba) -> Image{
+    let mut new_image: Image = image.clone();
+    let radius = calculate_radius(p0, p1);
+    let mut a:f32 = 0.0;
+    let step = 0.01;
+    while (a < 6.28){
+        let temp_x:f32 = radius*a.cos();
+        let temp_y:f32 = radius*a.sin();
+        let x_circunference:i32 = p0.0 + temp_x;
+        let y_circunference:i32 = p0.1 + temp_y;
+        if !(x_circunference > image.len()|| x_circunference < 0 || y_circunference < 0 || y_circunference > image[0].len()){
+            let new_point_1: Point = (x_circunference as u32, y_circunference as u32);
+            new_image[new_point_1.0 as usize][new_point_1.1 as usize] = color;
+        }
+        a += step;
+    }
+}
+
+pub fn bresenham_circunference_algorithm(image: Image, p0: Point, p1: Point, color: Rgba) -> Image{
+    let mut new_image: Image = image.clone();
+    let radius = calculate_radius(p0, p1);
+    //let mut h
     new_image
 }

@@ -15,6 +15,16 @@ fn bresenham_line_algorithm(image: Image, p0: Point, p1: Point, color: Rgba) -> 
     Ok(operations:: bresenham_line_algorithm(image, p0, p1, color))
 }
 
+#[pyfunction]
+fn draw_circunference(image: Image, p0: Point, p1: Point, color: Rgba) -> PyResult<Image> {
+    Ok(operations:: draw_circle(image, p0, p1, color))
+}
+
+#[pyfunction]
+fn bresenham_circunference_algorithm(image: Image, p0: Point, p1: Point, color: Rgba) -> PyResult<Image> {
+    Ok(operations:: bresenham_circle_algorithm(image, p0, p1, color))
+}
+
 #[pymodule]
 fn libkayn(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(draw_line, m)?)?;
