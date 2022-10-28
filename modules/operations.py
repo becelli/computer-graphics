@@ -49,10 +49,10 @@ class Operations:
         self.img = QImage(result, new_w, new_h, QImage.Format.Format_RGBA8888)
         return self.img
 
-    def draw_line(self, p0: Point, p1: Point):
+    def draw_line(self, points: list[Point]):
         import random
 
-        print(p0, p1)
+        p1, p2 = points
         w, h = self.img.width(), self.img.height()
 
         for i in range(100):
@@ -72,7 +72,7 @@ class CG():
 
     def apply(self, code: int, **kwargs):
         all_operations = {OPCODE.DRAW_LINE: self.f.draw_line}
-
+        # 
         if code in all_operations:
             self.update_reference_image()
             output = all_operations[code](**kwargs)

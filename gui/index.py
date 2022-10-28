@@ -1,11 +1,15 @@
+import numpy as np
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QMenu
-from PyQt5.QtGui import QPixmap, QImage, QFont, QGuiApplication, QMouseEvent, QIcon
+from PyQt5.QtGui import QPixmap, QImage, QFont, QGuiApplication, QMouseEvent, QIcon, QPainter, QPen, QBrush, QColor
 from PyQt5.QtCore import Qt
 from modules.operations import CG
 import gui.colors_adapter as c_adpt
 import gui.qt_override as qto
 from gui.window import setup as w_setup, menubar as w_menubar
 from gui.window.types import OPCODE, Point
+
+TWO_POINTS_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_CIRCLE,
+                         OPCODE.DRAW_LINE_BRESENHAM, OPCODE.DRAW_CIRCLE_BRESENHAM]
 
 
 class Application(QMainWindow):
@@ -24,7 +28,7 @@ class Application(QMainWindow):
         w_menubar.display_menubar(self)
         self.display_main_content()
         self.display_toolbar()
-        self.listen_to_mouse_clicks()
+        self.listen_to_mouse_events()
 
     def set_operation(self, operation: int):
         self.operation = operation
@@ -130,22 +134,60 @@ class Application(QMainWindow):
         self.buttons.append(circleBresenhamButton)
         toolbar.addWidget(circleBresenhamButton)
 
-    def listen_to_mouse_clicks(self):
+    def listen_to_mouse_events(self):
         self.canvas.mousePressEvent = self.mouse_click_event
+        self.canvas.mouseMoveEvent = self.mouse_move_event
 
     def mouse_click_event(self, event: QMouseEvent):
-
         if self.operation == OPCODE.NONE:
             self.points = []
             return
-        if self.operation == OPCODE.DRAW_LINE:
+        if self.operation in TWO_POINTS_OPERATIONS:
             if len(self.points) < 2:
                 point = Point(event.x(), event.y())
                 self.points.append(point)
+                if len(self.points) == 1:
+                    self.backup_image = self.canvas.pixmap().toImage()
                 if len(self.points) == 2:
-                    self.CGLIB.apply(OPCODE.DRAW_LINE,
-                                     p0=self.points[0], p1=self.points[1])
+                    self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                    self.CGLIB.apply(self.operation, points=self.points)
                     self.points = []
+
+    def mouse_move_event(self, event: QMouseEvent):
+        if self.operation == OPCODE.NONE:
+            return
+        if self.operation == OPCODE.DRAW_LINE or self.operation == OPCODE.DRAW_LINE_BRESENHAM:
+            if len(self.points) == 1:
+                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                pen = QPen()
+                pen.setWidth(1)
+                pen.setColor(QColor(255, 0, 0))
+                painter = QPainter(self.canvas.pixmap())
+                painter.setPen(pen)
+                painter.drawLine(self.points[0].x, self.points[0].y,
+                                 event.x(), event.y())
+                painter.end()
+                self.canvas.repaint()
+            return
+        if self.operation == OPCODE.DRAW_CIRCLE or self.operation == OPCODE.DRAW_CIRCLE_BRESENHAM:
+            if len(self.points) == 1:
+                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                pen = QPen()
+                pen.setWidth(1)
+                pen.setColor(QColor(255, 0, 0))
+                painter = QPainter(self.canvas.pixmap())
+                painter.setPen(pen)
+                # Draw a circle with center at the first point and radius
+                # equal to the distance between the first point and the current
+                # mouse position
+                center = self.points[0]
+                radius = int(np.sqrt((center.x - event.x())**2 +
+                                     (center.y - event.y())**2))
+                radius = int(radius)
+                painter.drawEllipse(center.x - radius, center.y -
+                                    radius, radius * 2, radius * 2)
+                painter.end()
+                self.canvas.repaint()
 
     def select_button(self, button: QPushButton, opcode: int):
         for b in self.buttons:
@@ -158,6 +200,7 @@ class Application(QMainWindow):
         grid = qto.QGrid()
 
         self.canvas = qto.create_canvas()
+        self.backup_image = self.canvas.pixmap().toImage()
         self.CGLIB = CG(self.canvas)
         self.set_mouse_tracking_to_show_pixel_details(self.canvas)
 
