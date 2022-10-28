@@ -1,11 +1,11 @@
 [package]
-name = "libkayn"
+name = "cglib"
 version = "0.1.0"
 authors = ["Gustavo Becelli"]
 edition = "2021"
 
 [lib]
-name = "libkayn"
+name = "cglib"
 crate-type = ["cdylib"]
 
 [dependencies]

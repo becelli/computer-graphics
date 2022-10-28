@@ -35,7 +35,7 @@ class OS:
 class Linux(OS):
     def __init__(self):
         self.rust_build = "cargo build --release --manifest-path=./library/Cargo.toml"
-        self.copy_lib = "cp ./library/target/release/liblibkayn.so ./libkayn.so"
+        self.copy_lib = "cp ./library/target/release/libcglib.so ./cglib.so"
         self.execute_python = "python3 kayn.pyw"
         self.compile_python = "nuitka3 kayn.pyw --follow-imports"
 
@@ -44,7 +44,7 @@ class Windows(OS):
     def __init__(self):
         self.rust_build = "cargo build --release --manifest-path=./library/Cargo.toml"
         self.copy_lib = (
-            "copy modules\\libkayn\\target\\release\\libkayn.dll libkayn.pyd"
+            "copy modules\\cglib\\target\\release\\cglib.dll cglib.pyd"
         )
         self.execute_python = "python .\kayn.pyw"
         self.compile_python = "nuitka .\kayn.pyw --follow-imports"
@@ -53,7 +53,7 @@ class Windows(OS):
 class Mac(OS):
     def __init__(self):
         self.rust_build = "cargo build --release --manifest-path=./library/Cargo.toml"
-        self.copy_lib = "cp ./library/target/release/liblibkayn.dylib ./libkayn.so"
+        self.copy_lib = "cp ./library/target/release/libcglib.dylib ./cglib.so"
         self.execute_python = "python3 kayn.pyw"
         self.compile_python = "nuitka3 kayn.pyw --follow-imports"
 
@@ -74,9 +74,13 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "dev":
             system.dev_build()
-        if sys.argv[1] == "devb":
+        if sys.argv[1] == "devlib":
             system.lib_build()
             system.dev_build()
+
+        if sys.argv[1] == "lib":
+            system.lib_build()
+
         elif sys.argv[1] == "release":
             system.release_build()
         elif sys.argv[1] == "install":

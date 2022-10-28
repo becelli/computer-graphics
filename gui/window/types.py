@@ -10,6 +10,19 @@ class OPCODE:
 
 
 @dataclass
-class Point:
+class Point(tuple):
     x: int
     y: int
+    
+    def __new__(cls, x, y):
+        return super(Point, cls).__new__(cls, (x, y))
+
+    def __repr__(self):
+        return f'Point({self.x}, {self.y})'
+
+    def to_tuple(self):
+        return self.x, self.y
+    
+        
+
+

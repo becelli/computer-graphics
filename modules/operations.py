@@ -4,7 +4,7 @@ from PyQt5.QtGui import QImage, QColor
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtCore import QPoint
 import numpy as np
-# import libkayn as kayn
+import cglib
 from gui.window.types import OPCODE, Point
 import gui.qt_override as qto
 
@@ -33,6 +33,7 @@ class Operations:
     def default_filter(self, filter_func: callable, **kwargs) -> QImage:
         w, h = self.img.width(), self.img.height()
         image = self.get_img_pixels(w, h)
+
         filtered = np.array(filter_func(image, **kwargs),
                             dtype=np.uint8).astype(np.uint8)
         self.img = QImage(filtered, w, h, QImage.Format.Format_RGBA8888)
@@ -50,19 +51,20 @@ class Operations:
         return self.img
 
     def draw_line(self, points: list[Point]):
-        import random
+        p0, p1 = [p.to_tuple() for p in points]
+        return self.default_filter(cglib.draw_line, p0=p0, p1=p1, color=[255, 0, 0, 255])
 
-        p1, p2 = points
-        w, h = self.img.width(), self.img.height()
+    def draw_line_bresenham(self, points: list[Point]):
+        p0, p1 = [p.to_tuple() for p in points]
+        return self.default_filter(cglib.draw_line_bresenham, p0=p0, p1=p1, color=[255, 0, 0, 255])
 
-        for i in range(100):
-            x1, y1 = random.randint(0, w), random.randint(0, h)
-            x2, y2 = random.randint(0, w), random.randint(0, h)
-            rgb = QColor(200, 255, 255)
-            self.img.setPixel(x1, y1, rgb.rgba())
-            self.img.setPixel(x2, y2, rgb.rgba())
+    def draw_circle(self, points: list[Point]):
+        p0, p1 = points
+        return self.default_filter(cglib.draw_circle, p0=p0, p1=p1, color=[255, 0, 0, 255])
 
-        return self.img
+    def draw_circle_bresenham(self, points: list[Point]):
+        p0, p1 = points
+        return self.default_filter(cglib.draw_circle_bresenham, p0=p0, p1=p1, color=[255, 0, 0, 255])
 
 
 class CG():
@@ -71,8 +73,12 @@ class CG():
         self.f = Operations(None)
 
     def apply(self, code: int, **kwargs):
-        all_operations = {OPCODE.DRAW_LINE: self.f.draw_line}
-        # 
+        all_operations = {OPCODE.DRAW_LINE: self.f.draw_line,
+                          OPCODE.DRAW_LINE_BRESENHAM: self.f.draw_line_bresenham,
+                          OPCODE.DRAW_CIRCLE: self.f.draw_circle,
+                          OPCODE.DRAW_CIRCLE_BRESENHAM: self.f.draw_circle_bresenham,
+                          }
+
         if code in all_operations:
             self.update_reference_image()
             output = all_operations[code](**kwargs)
