@@ -89,6 +89,15 @@ def display_grid_on_window(window: QMainWindow, grid: QGrid) -> None:
     window.show()
 
 
+def get_pixel_color(image: QImage, x: int, y: int) -> QColor:
+    return QColor(image.pixel(x, y)).getRgb()
+
+
+def is_color_dark(color: list[int]) -> bool:
+    r, g, b, _ = color
+    return (r * 0.299 + g * 0.587 + b * 0.114) / 255 < 0.5
+
+
 def get_image_from_canvas(canvas: QLabel) -> QImage:
     return canvas.pixmap().toImage()
 
