@@ -12,36 +12,43 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let height = image[0].len();
     let mut new_image: Image = image.clone();
     let increment: i32;
-
-    let delta_x = p1.0 - p0.0;
-    let delta_y = p1.1 - p0.1;
-    if delta_x >= delta_y {
-        let m = ((p1.1 - p0.1) / (p1.0 - p0.0)) as f32;
-        if p1.0 > p0.0 {
-            increment = -1;
-        } else {
+    println!("x0 = {} y0 = {}", p0.0, p0.1);
+    println!("x1 = {} y1 = {}", p1.0, p1.1);
+    println!("");
+    let delta_x:i32 = p1.0 as i32 - p0.0 as i32;
+    let delta_y:i32 = p1.1 as i32 - p0.1 as i32;
+    if delta_x.abs() >= delta_y.abs() {
+        let m = delta_y as f32 / delta_x as f32;
+        let mut p0_x = p0.0 as i32;
+        let p1_x = p1.0 as i32;
+        if p1_x > p0_x {
             increment = 1;
+        } else {
+            increment = -1;
         }
-        let mut temp_x1 = p1.0;
-        let temp_x0 = p0.0;
-        while temp_x1 != temp_x0 {
-            let new_point: Point = (temp_x1, (temp_x1 as f32 * m) as u32);
-            new_image[new_point.0 as usize][new_point.1 as usize] = color;
-            temp_x1 += increment as u32;
+        
+        while p0_x != p1_x  {
+            let new_point: Point = (p0_x as u32, (p0.1 as f32 +  (p0_x as f32 - p0.0 as f32) * m).floor() as u32);
+            new_image[new_point.1 as usize][new_point.0 as usize] = color;
+            p0_x = p0_x + increment;
+            println!("{} {}", new_point.0, new_point.1);
+            println!("");
         }
     } else {
-        let m = ((p1.0 - p0.0) / (p1.1 - p0.1)) as f32;
-        if p1.1 > p0.1 {
-            increment = -1;
-        } else {
+        let m = delta_x as f32/ delta_y as f32;
+        let mut p0_y = p0.1 as i32;
+        let p1_y = p1.1 as i32;
+        if p1_y > p0_y {
             increment = 1;
+        } else {
+            increment = -1;
         }
-        let mut temp_y1 = p1.1;
-        let temp_y0 = p0.1;
-        while temp_y1 != temp_y0 {
-            let new_point: Point = (temp_y1, (temp_y1 as f32 * m) as u32);
-            new_image[new_point.0 as usize][new_point.1 as usize] = color;
-            temp_y1 += increment as u32;
+        while p0_y != p1_y {
+            let new_point: Point = ((p0.0 as f32 + (p0_y as f32 - p0.1 as f32) * m).floor() as u32, p0_y as u32);
+            new_image[new_point.1 as usize][new_point.0 as usize] = color;
+            p0_y = p0_y + increment;
+            println!("{} {}", new_point.0, new_point.1);
+            println!("");
         }
     }
     new_image
