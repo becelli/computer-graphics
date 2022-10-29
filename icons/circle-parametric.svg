@@ -1,0 +1,5 @@
+<svg height="16" width="16">
+  <!-- circle with dashed line -->
+  <circle cx="8" cy="8" r="7" stroke="black" stroke-width="1.5" fill="none" stroke-dasharray="1, 1"/>
+  
+</svg>

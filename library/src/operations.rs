@@ -1,47 +1,37 @@
 use crate::common::*;
 
-// use std::f64::consts::PI;
-//use crate::nalgebra;
-// use crate::transformations;
-// use std::thread;
-
-
+use std::f32::consts::PI;
 
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
-    let width = image.len();
-    let height = image[0].len();
     let mut new_image: Image = image.clone();
-    let increment: i32;
-    let delta_x:i32 = p1.0 as i32 - p0.0 as i32;
-    let delta_y:i32 = p1.1 as i32 - p0.1 as i32;
-    if delta_x.abs() >= delta_y.abs() {
+    let delta_x: i32 = p1.0 - p0.0;
+    let delta_y: i32 = p1.1 - p0.1;
+    if delta_x.abs() > delta_y.abs() {
         let m = delta_y as f32 / delta_x as f32;
-        let mut p0_x = p0.0 as i32;
-        let p1_x = p1.0 as i32;
-        if p1_x > p0_x {
-            increment = 1;
-        } else {
-            increment = -1;
-        }
-        
-        while p0_x != p1_x  {
-            let new_point: Point = (p0_x as u32, (p0.1 as f32 +  (p0_x as f32 - p0.0 as f32) * m).floor() as u32);
+        let mut p0_x = p0.0;
+        let p1_x = p1.0;
+        let increment = if p1_x > p0_x { 1 } else { -1 };
+
+        while p0_x != p1_x {
+            let new_point: Point = (
+                p0_x,
+                (p0.1 as f32 + (p0_x - p0.0) as f32 * m).floor() as i32,
+            );
             new_image[new_point.1 as usize][new_point.0 as usize] = color;
-            p0_x = p0_x + increment;
+            p0_x += increment;
         }
     } else {
-        let m = delta_x as f32/ delta_y as f32;
-        let mut p0_y = p0.1 as i32;
-        let p1_y = p1.1 as i32;
-        if p1_y > p0_y {
-            increment = 1;
-        } else {
-            increment = -1;
-        }
+        let m = delta_x as f32 / delta_y as f32;
+        let mut p0_y = p0.1;
+        let p1_y = p1.1;
+        let increment = if p1_y > p0_y { 1 } else { -1 };
         while p0_y != p1_y {
-            let new_point: Point = ((p0.0 as f32 + (p0_y as f32 - p0.1 as f32) * m).floor() as u32, p0_y as u32);
+            let new_point: Point = (
+                (p0.0 as f32 + (p0_y - p0.1) as f32 * m).floor() as i32,
+                p0_y,
+            );
             new_image[new_point.1 as usize][new_point.0 as usize] = color;
-            p0_y = p0_y + increment;
+            p0_y += increment;
         }
     }
     new_image
@@ -50,77 +40,48 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
 //draw a line using the bresenham algorithm
 pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
-    let increment_y: i32;
-    let increment_x: i32;
     let delta_x: i32 = (p1.0 - p0.0) as i32;
     let delta_y: i32 = (p1.1 - p0.1) as i32;
+    // Determine the increments
+    let (inc_x, inc_y) = match (delta_x, delta_y) {
+        (x, y) if x >= 0 && y >= 0 => (1, 1),
+        (x, y) if x >= 0 && y < 0 => (1, -1),
+        (x, y) if x < 0 && y >= 0 => (-1, 1),
+        _ => (-1, -1),
+    };
     if delta_x.abs() >= delta_y.abs() {
-        if delta_x >= 0 {
-            //first or eighth octet
-            increment_x = 1;
-            if delta_y >= 0 {
-                increment_y = 1;
-            } else {
-                increment_y = -1;
-            }
-        } else {
-            //fourth or fifth octet
-            increment_x = -1;
-            if delta_y >= 0 {
-                increment_y = 1;
-            } else {
-                increment_y = -1;
-            }
-        }
-        let mut yp: i32 = p0.1 as i32;
-        let mut d: i32 = (2 * (increment_y * delta_y) - (increment_x * delta_x));
-        let mut x: i32 = p0.0 as i32;
-        while x != p1.0 as i32 {
+        let mut yp: i32 = p0.1;
+        let mut d: i32 = 2 * (inc_y * delta_y) - (inc_x * delta_x);
+        let mut x: i32 = p0.0;
+        while x != p1.0 {
             if d > 0 {
-                yp += increment_y;
-                let new_point: Point = (x as u32, yp as u32);
+                yp += inc_y;
+                let new_point: Point = (x, yp);
                 new_image[new_point.1 as usize][new_point.0 as usize] = color;
-                d += 2 * ((increment_y * delta_y) - (increment_x * delta_x));
+                d += 2 * (inc_y * delta_y - inc_x * delta_x);
             } else {
-                let new_point: Point = (x as u32, yp as u32);
+                let new_point: Point = (x, yp);
                 new_image[new_point.1 as usize][new_point.0 as usize] = color;
-                d += 2 * (increment_y * delta_y);
+                d += 2 * inc_y * delta_y;
             }
-            x += increment_x;
+            x += inc_x;
         }
     } else {
-        if delta_y >= 0 {
-            //second or third octet
-            increment_y = 1;
-            if delta_x >= 0 {
-                increment_x = 1;
-            } else {
-                increment_x = -1;
-            }
-        } else {
-            //sixth or seventh octet
-            increment_y = -1;
-            if delta_x >= 0 {
-                increment_x = 1;
-            } else {
-                increment_x = -1;
-            }
-        }
         let mut xp: i32 = p0.0 as i32;
-        let mut d: i32 = (2 * (increment_x * delta_x) - (increment_y * delta_y)) as i32;
+        let mut d: i32 = (2 * (inc_x * delta_x) - (inc_y * delta_y)) as i32;
         let mut y: i32 = p0.1 as i32;
         while y != p1.1 as i32 {
             if d > 0 {
-                xp += increment_x;
-                let new_point: Point = (xp as u32, y as u32);
+                xp += inc_x;
+                let new_point: Point = (xp, y);
                 new_image[new_point.1 as usize][new_point.0 as usize] = color;
-                d += 2*((increment_x *delta_x) - (increment_y * delta_y));
+                d += 2 * (inc_x * delta_x - inc_y * delta_y);
             } else {
-                let new_point: Point = (xp as u32, y as u32);
+                let new_point: Point = (xp, y);
                 new_image[new_point.1 as usize][new_point.0 as usize] = color;
-                d += 2*(increment_x*delta_x);
+                d += 2 * inc_x * delta_x;
             }
-            y    += increment_y;
+            y += inc_y;
         }
     }
     new_image
@@ -128,63 +89,37 @@ pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> I
 
 fn calculate_radius(p0: Point, p1: Point) -> i32 {
     // radius for a circle from p0 to p1
-    let delta_x = (p1.0  - p0.0) as i32;
-    let delta_y = (p1.1 - p0.1) as i32;
-    let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f32).sqrt() as i32;
-    radius
+    let delta_x = p1.0 - p0.0;
+    let delta_y = p1.1 - p0.1;
+    let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f32).sqrt();
+    radius as i32
 }
 
 //p0 is the center, p1 is a point which belongs to the circunference
 pub fn draw_circle(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
+    let height = image.len();
+    let width = image[0].len();
     let radius = calculate_radius(p0, p1);
 
-    for x in -1 * radius..radius {
-        let x_circunference: i32 = p0.0 as i32 - x;
+    for x in -radius..radius {
+        let x_circunference: i32 = p0.0 - x;
         let temp_y: i32 = ((radius.pow(2) - x.pow(2)) as f64).sqrt() as i32;
         //reminder: an higher y implies in a lower pixel position
-        let y_upper: i32 = p0.1 as i32 - temp_y;
-        let y_lower: i32 = p0.1 as i32 + temp_y;
+        let y_upper: i32 = p0.1 - temp_y;
+        let y_lower: i32 = p0.1 + temp_y;
 
-        //do not draw if the circunference surpass the images boundaries
-        if !(x_circunference > image.len() as i32 || x_circunference < 0){
-            //draw the upper half if it doesnt surpass the image borders
-            if (y_upper > 0){
-                let new_point_1: Point = (x_circunference as u32, y_upper as u32);
-                new_image[new_point_1.1 as usize][new_point_1.0 as usize] = color;
+        if x_circunference >= 0 && x_circunference < width as i32 {
+            if y_upper >= 0 && y_upper < height as i32 {
+                new_image[y_upper as usize][x_circunference as usize] = color;
             }
-            //draw the lower half if it doesnt surpass the image borders
-            if(y_lower < image[0].len() as i32){        
-                let new_point_2: Point = (x_circunference as u32, y_lower as u32);
-                new_image[new_point_2.1 as usize][new_point_2.0 as usize] = color;
+            if y_lower >= 0 && y_lower < height as i32 {
+                new_image[y_lower as usize][x_circunference as usize] = color;
             }
         }
     }
     new_image
 }
-
-// pub fn parametric_circunference(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
-//     let mut new_image: Image = image.clone();
-//     let radius = calculate_radius(p0, p1);
-//     let mut a: f32 = 0.0;
-//     let step = 0.01;
-//     while a < PI * 2.0 {
-//         let temp_x: f32 = radius * a.cos();
-//         let temp_y: f32 = radius * a.sin();
-//         let x_circunference: i32 = p0.0 + temp_x;
-//         let y_circunference: i32 = p0.1 + temp_y;
-//         if !(x_circunference > image.len()
-//             || x_circunference < 0
-//             || y_circunference < 0
-//             || y_circunference > image[0].len())
-//         {
-//             let new_point_1: Point = (x_circunference as u32, y_circunference as u32);
-//             new_image[new_point_1.0 as usize][new_point_1.1 as usize] = color;
-//         }
-//         a += step;
-//     }
-// }
-
 
 pub fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
@@ -198,21 +133,19 @@ pub fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) ->
 
     while x <= y {
         let plot_points = vec![
-            (x, y),
-            (x, -y),
-            (-x, y),
-            (-x, -y),
-            (y, x),
-            (y, -x),
-            (-y, x),
-            (-y, -x),
+            (p0.0 + x, p0.1 + y),
+            (p0.0 + x, p0.1 - y),
+            (p0.0 - x, p0.1 + y),
+            (p0.0 - x, p0.1 - y),
+            (p0.0 + y, p0.1 + x),
+            (p0.0 + y, p0.1 - x),
+            (p0.0 - y, p0.1 + x),
+            (p0.0 - y, p0.1 - x),
         ];
 
-        for (x, y) in plot_points {
-            let x = x + p0.0 as i32;
-            let y = y + p0.1 as i32;
-            if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-                new_image[y as usize][x as usize] = color;
+        for point in plot_points {
+            if point.0 >= 0 && point.0 < width as i32 && point.1 >= 0 && point.1 < height as i32 {
+                new_image[point.1 as usize][point.0 as usize] = color;
             }
         }
 
@@ -225,5 +158,24 @@ pub fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) ->
         x = x + 1;
     }
 
+    new_image
+}
+
+pub fn draw_circle_parametric(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
+    let mut new_image: Image = image.clone();
+    let height = image.len() as i32;
+    let width = image[0].len() as i32;
+    let radius = calculate_radius(p0, p1);
+    let mut a: f32 = 0.0;
+    let step = 0.01;
+    while a < 2.0 * PI {
+        let x = (radius as f32 * a.cos()) as i32;
+        let y = (radius as f32 * a.sin()) as i32;
+        let new_point: Point = (p0.0 + x, p0.1 + y);
+        if new_point.0 >= 0 && new_point.0 < width && new_point.1 >= 0 && new_point.1 < height {
+            new_image[new_point.1 as usize][new_point.0 as usize] = color;
+        }
+        a += step;
+    }
     new_image
 }

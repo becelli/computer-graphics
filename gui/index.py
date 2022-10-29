@@ -1,26 +1,27 @@
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QMenu
+from random import randint as rdint
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QMenu, QColorDialog, QWidget, QSizePolicy
 from PyQt5.QtGui import QPixmap, QImage, QFont, QGuiApplication, QMouseEvent, QIcon, QPainter, QPen, QBrush, QColor
 from PyQt5.QtCore import Qt
 from modules.operations import CG
-import gui.colors_adapter as c_adpt
 import gui.qt_override as qto
 from gui.window import setup as w_setup, menubar as w_menubar
 from gui.window.types import OPCODE, Point
 
 TWO_POINTS_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_CIRCLE,
-                         OPCODE.DRAW_LINE_BRESENHAM, OPCODE.DRAW_CIRCLE_BRESENHAM]
+                         OPCODE.DRAW_LINE_BRESENHAM, OPCODE.DRAW_CIRCLE_BRESENHAM, OPCODE.DRAW_CIRCLE_PARAMETRIC]
 
 
 class Application(QMainWindow):
     def __init__(self):
         super().__init__()
-        # self.window_dimensions = (853, 480)
         self.canvas: QLabel = None
         self.operation: int = OPCODE.NONE
         self.buttons: list[QPushButton] = []
-        self.color_widget: QLabel = None
+        self.current_color_widget: QLabel = None
         self.points: list[Point] = []
+        self.primary_color = QColor(
+            rdint(0, 255), rdint(0, 255), rdint(0, 255))
         self.CGLIB = None
         self.setup()
 
@@ -51,37 +52,66 @@ class Application(QMainWindow):
         self.buttons.append(none_button)
         toolbar.addWidget(none_button)
 
-        lineButton = QPushButton()
-        lineButton.setIcon(QIcon("icons/line.svg"))
-        lineButton.setToolTip("Draw a Simple Line")
-        lineButton.clicked.connect(
-            lambda: self.select_button(lineButton, OPCODE.DRAW_LINE))
-        self.buttons.append(lineButton)
-        toolbar.addWidget(lineButton)
+        self.color_selector = QPushButton()
+        self.color_selector.setIcon(QIcon("icons/color-picker.svg"))
+        self.color_selector.setToolTip("Color Selector")
+        self.color_selector.clicked.connect(self.display_system_color_selector)
+        self.color_selector.setStyleSheet(
+            f"background-color: {self.primary_color.name()};")
 
-        lineBresenhamButton = QPushButton()
-        lineBresenhamButton.setIcon(QIcon("icons/line-full.svg"))
-        lineBresenhamButton.setToolTip("Bresenham's Line Algorithm")
-        lineBresenhamButton.clicked.connect(
-            lambda: self.select_button(lineBresenhamButton, OPCODE.DRAW_LINE_BRESENHAM))
-        self.buttons.append(lineBresenhamButton)
-        toolbar.addWidget(lineBresenhamButton)
+        self.buttons.append(self.color_selector)
+        toolbar.addWidget(self.color_selector)
 
-        circleButton = QPushButton()
-        circleButton.setIcon(QIcon("icons/circle.svg"))
-        circleButton.setToolTip("Draw a Simple Circle")
-        circleButton.clicked.connect(
-            lambda: self.select_button(circleButton, OPCODE.DRAW_CIRCLE))
-        self.buttons.append(circleButton)
-        toolbar.addWidget(circleButton)
+        line_button = QPushButton()
+        line_button.setIcon(QIcon("icons/line.svg"))
+        line_button.setToolTip("Draw a Simple Line")
+        line_button.clicked.connect(
+            lambda: self.select_button(line_button, OPCODE.DRAW_LINE))
+        self.buttons.append(line_button)
+        toolbar.addWidget(line_button)
 
-        circleBresenhamButton = QPushButton()
-        circleBresenhamButton.setIcon(QIcon("icons/circle-full.svg"))
-        circleBresenhamButton.setToolTip("Bresenham's Circle Algorithm")
-        circleBresenhamButton.clicked.connect(
-            lambda: self.select_button(circleBresenhamButton, OPCODE.DRAW_CIRCLE_BRESENHAM))
-        self.buttons.append(circleBresenhamButton)
-        toolbar.addWidget(circleBresenhamButton)
+        line_bresenham_button = QPushButton()
+        line_bresenham_button.setIcon(QIcon("icons/line-full.svg"))
+        line_bresenham_button.setToolTip("Bresenham's Line Algorithm")
+        line_bresenham_button.clicked.connect(
+            lambda: self.select_button(line_bresenham_button, OPCODE.DRAW_LINE_BRESENHAM))
+        self.buttons.append(line_bresenham_button)
+        toolbar.addWidget(line_bresenham_button)
+
+        circle_button = QPushButton()
+        circle_button.setIcon(QIcon("icons/circle.svg"))
+        circle_button.setToolTip("Draw a Simple Circle")
+        circle_button.clicked.connect(
+            lambda: self.select_button(circle_button, OPCODE.DRAW_CIRCLE))
+        self.buttons.append(circle_button)
+        toolbar.addWidget(circle_button)
+
+        circle_bresenham_button = QPushButton()
+        circle_bresenham_button.setIcon(QIcon("icons/circle-full.svg"))
+        circle_bresenham_button.setToolTip("Bresenham's Circle Algorithm")
+        circle_bresenham_button.clicked.connect(
+            lambda: self.select_button(circle_bresenham_button, OPCODE.DRAW_CIRCLE_BRESENHAM))
+        self.buttons.append(circle_bresenham_button)
+        toolbar.addWidget(circle_bresenham_button)
+
+        circle_parametric_button = QPushButton()
+        circle_parametric_button.setIcon(QIcon("icons/circle-parametric.svg"))
+        circle_parametric_button.setToolTip("Parametric Circle Algorithm")
+        circle_parametric_button.clicked.connect(
+            lambda: self.select_button(circle_parametric_button, OPCODE.DRAW_CIRCLE_PARAMETRIC))
+        self.buttons.append(circle_parametric_button)
+        toolbar.addWidget(circle_parametric_button)
+
+        self.select_button(none_button, OPCODE.NONE)
+
+    def display_system_color_selector(self):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.color_selector.setStyleSheet(
+                f"background-color: {color.name()};")
+            self.primary_color = color
+            self.operation = OPCODE.NONE
+            self.select_button(self.buttons[0], OPCODE.NONE)
 
     def listen_to_mouse_events(self):
         self.canvas.setMouseTracking(True)
@@ -100,7 +130,8 @@ class Application(QMainWindow):
                     self.backup_image = self.canvas.pixmap().toImage()
                 if len(self.points) == 2:
                     self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
-                    self.CGLIB.apply(self.operation, points=self.points)
+                    self.CGLIB.apply(
+                        self.operation, points=self.points, color=self.primary_color)
                     self.points = []
 
     def mouse_move_event(self, event: QMouseEvent):
@@ -112,7 +143,7 @@ class Application(QMainWindow):
                 self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
                 pen = QPen()
                 pen.setWidth(1)
-                pen.setColor(QColor(255, 0, 0))
+                pen.setColor(self.primary_color)
                 painter = QPainter(self.canvas.pixmap())
                 painter.setPen(pen)
                 painter.drawLine(self.points[0].x, self.points[0].y,
@@ -120,17 +151,14 @@ class Application(QMainWindow):
                 painter.end()
                 self.canvas.repaint()
             return
-        if self.operation == OPCODE.DRAW_CIRCLE or self.operation == OPCODE.DRAW_CIRCLE_BRESENHAM:
+        if self.operation == OPCODE.DRAW_CIRCLE or self.operation == OPCODE.DRAW_CIRCLE_BRESENHAM or OPCODE.DRAW_CIRCLE_PARAMETRIC:
             if len(self.points) == 1:
                 self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
                 pen = QPen()
                 pen.setWidth(1)
-                pen.setColor(QColor(255, 0, 0))
+                pen.setColor(self.primary_color)
                 painter = QPainter(self.canvas.pixmap())
                 painter.setPen(pen)
-                # Draw a circle with center at the first point and radius
-                # equal to the distance between the first point and the current
-                # mouse position
                 center = self.points[0]
                 radius = int(np.sqrt((center.x - event.x())**2 +
                                      (center.y - event.y())**2))
@@ -153,17 +181,29 @@ class Application(QMainWindow):
         grid = qto.QGrid()
 
         self.canvas = qto.create_canvas()
+        grid.addWidget(self.canvas, 1, 0)
         self.backup_image = self.canvas.pixmap().toImage()
         self.CGLIB = CG(self.canvas)
-        # self.set_mouse_tracking_to_show_pixel_details(self.canvas)
 
-        self.color_widget = QLabel()
-        self.color_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.color_widget.setFixedSize(150, 60)
-        grid.addWidget(self.canvas, 1, 0)
-        grid.addWidget(self.color_widget, 2, 0)
+        self.current_color_widget = QLabel()
+        self.current_color_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # widget should occupy the entire cell
+        self.current_color_widget.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.current_color_widget.setStyleSheet(
+            f"""background-color: rgba(0, 0, 0, 255);
+            color: white;   
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            """
+        )
 
-        grid.setRowStretch(3, 1)
+        self.current_color_widget.setText("xy(0, 0) — rgba(0, 0, 0, 255)")
+        grid.addWidget(self.current_color_widget, 2, 0)
+
+        grid.setRowStretch(2, 2)
         qto.display_grid_on_window(self, grid)
 
     def display_current_pixel_info(self, event: QMouseEvent):
@@ -174,12 +214,15 @@ class Application(QMainWindow):
 
         text_color = "white" if qto.is_color_dark(pixel_color) else "black"
 
-        self.color_widget.setStyleSheet(
+        # Use the entire grid to display the current pixel info
+        self.current_color_widget.setStyleSheet(
             f"""background-color: rgba({r}, {g}, {b}, {a});
             color: {text_color};
-            border-radius: 10px;
-            
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 5px;
+            padding-bottom: 5px;
             """
         )
-        self.color_widget.setText(
-            f"({ x }, {y})\n\n" f"rgba({r}, {g}, {b}, {a})")
+        self.current_color_widget.setText(
+            f"xy({ x }, {y})" f' — '  f"rgba({r}, {g}, {b}, {a})")

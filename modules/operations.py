@@ -25,6 +25,9 @@ class Operations:
     def create_new_image(self, width=320, height=240):
         return QImage(width, height, QImage.Format.Format_RGBA8888)
 
+    def qcolor_to_rgb(self, color: QColor):
+        return [color.red(), color.green(), color.blue(), color.alpha()]
+
     def get_default_elements_to_filters(self) -> tuple:
         w, h = self.img.width(), self.img.height()
         image = self.create_new_image(w, h)
@@ -50,21 +53,30 @@ class Operations:
         self.img = QImage(result, new_w, new_h, QImage.Format.Format_RGBA8888)
         return self.img
 
-    def draw_line(self, points: list[Point]):
-        p0, p1 = [p.to_tuple() for p in points]
-        return self.default_filter(cglib.draw_line, p0=p0, p1=p1, color=[255, 0, 0, 255])
+    def draw_line(self, **kwargs):
+        p0, p1 = kwargs['points']
+        color = self.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.draw_line, p0=p0, p1=p1, color=color)
 
-    def draw_line_bresenham(self, points: list[Point]):
-        p0, p1 = [p.to_tuple() for p in points]
-        return self.default_filter(cglib.draw_line_bresenham, p0=p0, p1=p1, color=[255, 0, 0, 255])
+    def draw_line_bresenham(self, **kwargs):
+        p0, p1 = kwargs['points']
+        color = self.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.draw_line_bresenham, p0=p0, p1=p1, color=color)
 
-    def draw_circle(self, points: list[Point]):
-        p0, p1 = points
-        return self.default_filter(cglib.draw_circle, p0=p0, p1=p1, color=[255, 0, 0, 255])
+    def draw_circle(self, **kwargs):
+        p0, p1 = kwargs['points']
+        color = self.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.draw_circle, p0=p0, p1=p1, color=color)
 
-    def draw_circle_bresenham(self, points: list[Point]):
-        p0, p1 = points
-        return self.default_filter(cglib.draw_circle_bresenham, p0=p0, p1=p1, color=[255, 0, 0, 255])
+    def draw_circle_bresenham(self, **kwargs):
+        p0, p1 = kwargs['points']
+        color = self.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.draw_circle_bresenham, p0=p0, p1=p1, color=color)
+
+    def draw_circle_parametric(self, **kwargs):
+        p0, p1 = kwargs['points']
+        color = self.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.draw_circle_parametric, p0=p0, p1=p1, color=color)
 
 
 class CG():
@@ -77,6 +89,7 @@ class CG():
                           OPCODE.DRAW_LINE_BRESENHAM: self.f.draw_line_bresenham,
                           OPCODE.DRAW_CIRCLE: self.f.draw_circle,
                           OPCODE.DRAW_CIRCLE_BRESENHAM: self.f.draw_circle_bresenham,
+                            OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
                           }
 
         if code in all_operations:
