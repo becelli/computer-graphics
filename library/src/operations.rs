@@ -136,8 +136,8 @@ pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> I
 
 fn calculate_radius(p0: Point, p1: Point) -> i32 {
     // radius for a circle from p0 to p1
-    let delta_x = p1.0 - p0.0;
-    let delta_y = p1.1 - p0.1;
+    let delta_x = (p1.0  - p0.0) as i32;
+    let delta_y = (p1.1 - p0.1) as i32;
     let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f32).sqrt() as i32;
     radius
 }
@@ -149,23 +149,23 @@ pub fn draw_circle(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
 
     for x in -1 * radius..radius {
         let x_circunference: i32 = p0.0 as i32 - x;
-        let temp_y: i32 = ((radius.pow(2) + x.pow(2)) as f64).sqrt() as i32;
+        let temp_y: i32 = ((radius.pow(2) - x.pow(2)) as f64).sqrt() as i32;
         //reminder: an higher y implies in a lower pixel position
         let y_upper: i32 = p0.1 as i32 - temp_y;
         let y_lower: i32 = p0.1 as i32 + temp_y;
 
         //do not draw if the circunference surpass the images boundaries
-        if !(x_circunference > image.len() as i32
-            || x_circunference < 0
-            || y_upper < 0
-            || y_lower > image[0].len() as i32)
-        {
-            //draws the upper and lower half of the circunference
-            let new_point_1: Point = (x_circunference as u32, y_upper as u32);
-            new_image[new_point_1.0 as usize][new_point_1.1 as usize] = color;
-
-            let new_point_2: Point = (x_circunference as u32, y_lower as u32);
-            new_image[new_point_2.0 as usize][new_point_2.1 as usize] = color;
+        if !(x_circunference > image.len() as i32 || x_circunference < 0){
+            //draw the upper half if it doesnt surpass the image borders
+            if (y_upper > 0){
+                let new_point_1: Point = (x_circunference as u32, y_upper as u32);
+                new_image[new_point_1.1 as usize][new_point_1.0 as usize] = color;
+            }
+            //draw the lower half if it doesnt surpass the image borders
+            if(y_lower < image[0].len() as i32){        
+                let new_point_2: Point = (x_circunference as u32, y_lower as u32);
+                new_image[new_point_2.1 as usize][new_point_2.0 as usize] = color;
+            }
         }
     }
     new_image
