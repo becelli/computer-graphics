@@ -12,9 +12,6 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let height = image[0].len();
     let mut new_image: Image = image.clone();
     let increment: i32;
-    println!("x0 = {} y0 = {}", p0.0, p0.1);
-    println!("x1 = {} y1 = {}", p1.0, p1.1);
-    println!("");
     let delta_x:i32 = p1.0 as i32 - p0.0 as i32;
     let delta_y:i32 = p1.1 as i32 - p0.1 as i32;
     if delta_x.abs() >= delta_y.abs() {
@@ -31,8 +28,6 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
             let new_point: Point = (p0_x as u32, (p0.1 as f32 +  (p0_x as f32 - p0.0 as f32) * m).floor() as u32);
             new_image[new_point.1 as usize][new_point.0 as usize] = color;
             p0_x = p0_x + increment;
-            println!("{} {}", new_point.0, new_point.1);
-            println!("");
         }
     } else {
         let m = delta_x as f32/ delta_y as f32;
@@ -47,8 +42,6 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
             let new_point: Point = ((p0.0 as f32 + (p0_y as f32 - p0.1 as f32) * m).floor() as u32, p0_y as u32);
             new_image[new_point.1 as usize][new_point.0 as usize] = color;
             p0_y = p0_y + increment;
-            println!("{} {}", new_point.0, new_point.1);
-            println!("");
         }
     }
     new_image
@@ -74,27 +67,26 @@ pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> I
             //fourth or fifth octet
             increment_x = -1;
             if delta_y >= 0 {
-                increment_y = -1;
-            } else {
                 increment_y = 1;
+            } else {
+                increment_y = -1;
             }
         }
         let mut yp: i32 = p0.1 as i32;
-
-        let mut d: i32 = (2 * (p1.1 - p0.1) - (p1.0 - p0.0)) as i32;
-        let mut i: i32 = p0.0 as i32;
-        while i <= p1.0 as i32 {
+        let mut d: i32 = (2 * (increment_y * delta_y) - (increment_x * delta_x));
+        let mut x: i32 = p0.0 as i32;
+        while x != p1.0 as i32 {
             if d > 0 {
-                let new_point: Point = (i as u32, yp as u32);
-                new_image[new_point.0 as usize][new_point.1 as usize] = color;
-                d += (p1.1 - p0.1) as i32;
-            } else {
                 yp += increment_y;
-                let new_point: Point = (i as u32, yp as u32);
-                new_image[new_point.0 as usize][new_point.1 as usize] = color;
-                d += ((p1.1 - p0.1) + (p1.0 - p0.0)) as i32;
+                let new_point: Point = (x as u32, yp as u32);
+                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                d += 2 * ((increment_y * delta_y) - (increment_x * delta_x));
+            } else {
+                let new_point: Point = (x as u32, yp as u32);
+                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                d += 2 * (increment_y * delta_y);
             }
-            i += increment_x;
+            x += increment_x;
         }
     } else {
         if delta_y >= 0 {
@@ -109,26 +101,26 @@ pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> I
             //sixth or seventh octet
             increment_y = -1;
             if delta_x >= 0 {
-                increment_x = -1;
-            } else {
                 increment_x = 1;
+            } else {
+                increment_x = -1;
             }
         }
         let mut xp: i32 = p0.0 as i32;
-        let mut d: i32 = (2 * (p1.0 - p0.0) - (p1.1 - p0.1)) as i32;
-        let mut i: i32 = p0.1 as i32;
-        while i < p1.1 as i32 {
+        let mut d: i32 = (2 * (increment_x * delta_x) - (increment_y * delta_y)) as i32;
+        let mut y: i32 = p0.1 as i32;
+        while y != p1.1 as i32 {
             if d > 0 {
-                let new_point: Point = (i as u32, xp as u32);
-                new_image[new_point.0 as usize][new_point.1 as usize] = color;
-                d += (p1.0 - p0.0) as i32;
-            } else {
                 xp += increment_x;
-                let new_point: Point = (i as u32, xp as u32);
-                new_image[new_point.0 as usize][new_point.1 as usize] = color;
-                d += ((p1.0 - p0.0) + (p1.1 - p0.1)) as i32;
+                let new_point: Point = (xp as u32, y as u32);
+                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                d += 2*((increment_x *delta_x) - (increment_y * delta_y));
+            } else {
+                let new_point: Point = (xp as u32, y as u32);
+                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                d += 2*(increment_x*delta_x);
             }
-            i += increment_y;
+            y    += increment_y;
         }
     }
     new_image
