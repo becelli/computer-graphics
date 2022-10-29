@@ -43,9 +43,7 @@ class Linux(OS):
 class Windows(OS):
     def __init__(self):
         self.rust_build = "cargo build --release --manifest-path=./library/Cargo.toml"
-        self.copy_lib = (
-            "copy modules\\cglib\\target\\release\\cglib.dll cglib.pyd"
-        )
+        self.copy_lib = "copy library\\target\\release\\cglib.dll cglib.pyd"
         self.execute_python = "python .\kayn.pyw"
         self.compile_python = "nuitka .\kayn.pyw --follow-imports"
 
