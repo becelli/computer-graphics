@@ -21,12 +21,12 @@ fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> PyRes
 
 #[pyfunction]
 fn draw_circle(image: Image, p0: Point, p1: Point, color: Rgba) -> PyResult<Image> {
-    Ok(operations:: draw_circle(image, p0, p1, color))
+    Ok(operations::draw_circle(image, p0, p1, color))
 }
 
 #[pyfunction]
 fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> PyResult<Image> {
-    Ok(operations:: draw_circle_bresenham(image, p0, p1, color))
+    Ok(operations::draw_circle_bresenham(image, p0, p1, color))
 }
 
 #[pymodule]

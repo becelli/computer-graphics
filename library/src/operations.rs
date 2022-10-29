@@ -5,8 +5,8 @@ use crate::common::*;
 // use crate::transformations;
 // use std::thread;
 
-//draw a line based on the formula: y = ax + b
-// pub fn draw_line(image: Image) -> Image {
+
+
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let width = image.len();
     let height = image[0].len();
@@ -128,11 +128,11 @@ pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> I
 }
 
 fn calculate_radius(p0: Point, p1: Point) -> i32 {
-    let delta_x: i32 = (p1.0 - p0.0) as i32;
-    let delta_y: i32 = (p1.1 - p0.1) as i32;
-    let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f64).sqrt();
-    let int_radius = (radius).floor() as i32;
-    int_radius
+    // radius for a circle from p0 to p1
+    let delta_x = p1.0 - p0.0;
+    let delta_y = p1.1 - p0.1;
+    let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f32).sqrt() as i32;
+    radius
 }
 
 //p0 is the center, p1 is a point which belongs to the circunference
@@ -186,9 +186,45 @@ pub fn draw_circle(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
 //     }
 // }
 
+
 pub fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
+    let height = image.len();
+    let width = image[0].len();
     let radius = calculate_radius(p0, p1);
-    //let mut h
+
+    let mut x = 0;
+    let mut y = radius;
+    let mut d = 3 - 2 * radius;
+
+    while x <= y {
+        let plot_points = vec![
+            (x, y),
+            (x, -y),
+            (-x, y),
+            (-x, -y),
+            (y, x),
+            (y, -x),
+            (-y, x),
+            (-y, -x),
+        ];
+
+        for (x, y) in plot_points {
+            let x = x + p0.0 as i32;
+            let y = y + p0.1 as i32;
+            if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
+                new_image[y as usize][x as usize] = color;
+            }
+        }
+
+        if d < 0 {
+            d = d + 4 * x + 6;
+        } else {
+            d = d + 4 * (x - y) + 10;
+            y = y - 1;
+        }
+        x = x + 1;
+    }
+
     new_image
 }

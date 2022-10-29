@@ -41,8 +41,10 @@ def add_actions_to_menu(window: QMainWindow, menu: QMenuBar, actions: tuple[Menu
 
 def add_actions_to_file_menu(window: QMainWindow, file_menu):
     actions = (
-        MenuAction("Open", fs.open_image, "CTRL+O", "Open an image"),
-        MenuAction("Save", fs.save_image, "CTRL+S", "Save the image"),
+        MenuAction("Open", lambda: fs.open_image(
+            window.canvas), "CTRL+O", "Open an image"),
+        MenuAction("Save", lambda: fs.save_image(
+            window.canvas), "CTRL+S", "Save the image"),
         MenuAction("Exit", window.close, "CTRL+Q", "Exit the application"),
     )
     add_actions_to_menu(window, file_menu, actions)
