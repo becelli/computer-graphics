@@ -30,7 +30,7 @@ class QObjects:
     def canvas(width: int, height: int) -> QLabel:
         img = QLabel()
         image = QImage(width, height, QImage.Format.Format_RGBA8888)
-        image.fill(QColor(0, 0, 0))
+        image.fill(QColor(255, 255, 255))
         put_image_on_canvas(img, image)
         return img
 
@@ -171,6 +171,10 @@ def create_canvas(xscale: int = 0, yscale: int = 0):
     if xscale != 0 and yscale != 0:
         canvas.setScaledContents(True)
         canvas.setFixedSize(xscale, yscale)
+
+    image = get_image_from_canvas(canvas)
+    image.fill(QColor(255, 255, 255))
+    put_image_on_canvas(canvas, image)
     return canvas
 
 
