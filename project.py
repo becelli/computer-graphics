@@ -36,24 +36,24 @@ class Linux(OS):
     def __init__(self):
         self.rust_build = "cargo build --release --manifest-path=./library/Cargo.toml"
         self.copy_lib = "cp ./library/target/release/libcglib.so ./cglib.so"
-        self.execute_python = "python3 kayn.pyw"
-        self.compile_python = "nuitka3 kayn.pyw --follow-imports"
+        self.execute_python = "python3 main.pyw"
+        self.compile_python = "nuitka3 main.pyw --follow-imports"
 
 
 class Windows(OS):
     def __init__(self):
         self.rust_build = "cargo build --release --manifest-path=./library/Cargo.toml"
         self.copy_lib = "copy library\\target\\release\\cglib.dll cglib.pyd"
-        self.execute_python = "python .\kayn.pyw"
-        self.compile_python = "nuitka .\kayn.pyw --follow-imports"
+        self.execute_python = "python .\main.pyw"
+        self.compile_python = "nuitka .\main.pyw --follow-imports"
 
 
 class Mac(OS):
     def __init__(self):
         self.rust_build = "cargo build --release --manifest-path=./library/Cargo.toml"
         self.copy_lib = "cp ./library/target/release/libcglib.dylib ./cglib.so"
-        self.execute_python = "python3 kayn.pyw"
-        self.compile_python = "nuitka3 kayn.pyw --follow-imports"
+        self.execute_python = "python3 main.pyw"
+        self.compile_python = "nuitka3 main.pyw --follow-imports"
 
 
 if __name__ == "__main__":
