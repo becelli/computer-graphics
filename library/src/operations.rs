@@ -179,3 +179,11 @@ pub fn draw_circle_parametric(image: Image, p0: Point, p1: Point, color: Rgba) -
     }
     new_image
 }
+
+pub fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba) -> Image {
+
+    let mut new_image = draw_line(image, p0, p1, color);
+    new_image = draw_line(new_image, p1, p2, color);
+    new_image = draw_line(new_image, p2, p0, color);
+    new_image
+}

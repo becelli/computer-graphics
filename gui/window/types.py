@@ -8,13 +8,14 @@ class OPCODE:
     DRAW_CIRCLE = 3
     DRAW_CIRCLE_BRESENHAM = 4
     DRAW_CIRCLE_PARAMETRIC = 5
+    DRAW_TRIANGLE = 6
 
 
 @dataclass
 class Point(tuple):
     x: int
     y: int
-    
+
     def __new__(cls, x, y):
         return super(Point, cls).__new__(cls, (x, y))
 
@@ -23,7 +24,3 @@ class Point(tuple):
 
     def to_tuple(self):
         return self.x, self.y
-    
-        
-
-

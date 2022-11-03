@@ -102,6 +102,14 @@ class Application(QMainWindow):
         self.buttons.append(circle_parametric_button)
         toolbar.addWidget(circle_parametric_button)
 
+        triangle_button = QPushButton()
+        triangle_button.setIcon(QIcon("icons/triangle.svg"))
+        triangle_button.setToolTip("Draw a Simple Triangle")
+        triangle_button.clicked.connect(
+            lambda: self.select_button(triangle_button, OPCODE.DRAW_TRIANGLE))
+        self.buttons.append(triangle_button)
+        toolbar.addWidget(triangle_button)
+
         self.select_button(none_button, OPCODE.NONE)
 
     def display_system_color_selector(self):
@@ -134,6 +142,18 @@ class Application(QMainWindow):
                         self.operation, points=self.points, color=self.primary_color)
                     self.points = []
 
+        if self.operation == OPCODE.DRAW_TRIANGLE:
+            if len(self.points) < 3:
+                point = Point(event.x(), event.y())
+                self.points.append(point)
+                if len(self.points) == 1:
+                    self.backup_image = self.canvas.pixmap().toImage()
+                if len(self.points) == 3:
+                    self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                    self.CGLIB.apply(
+                        self.operation, points=self.points, color=self.primary_color)
+                    self.points = []
+
     def mouse_move_event(self, event: QMouseEvent):
         self.display_current_pixel_info(event)
         if self.operation == OPCODE.NONE:
@@ -151,7 +171,7 @@ class Application(QMainWindow):
                 painter.end()
                 self.canvas.repaint()
             return
-        if self.operation == OPCODE.DRAW_CIRCLE or self.operation == OPCODE.DRAW_CIRCLE_BRESENHAM or OPCODE.DRAW_CIRCLE_PARAMETRIC:
+        if self.operation == OPCODE.DRAW_CIRCLE or self.operation == OPCODE.DRAW_CIRCLE_BRESENHAM or OPCODE.DRAW_CIRCLE_PARAMETRIC == self.operation:
             if len(self.points) == 1:
                 self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
                 pen = QPen()
@@ -165,6 +185,34 @@ class Application(QMainWindow):
                 radius = int(radius)
                 painter.drawEllipse(center.x - radius, center.y -
                                     radius, radius * 2, radius * 2)
+                painter.end()
+                self.canvas.repaint()
+
+        if self.operation == OPCODE.DRAW_TRIANGLE:
+            if len(self.points) == 1:
+                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                pen = QPen()
+                pen.setWidth(1)
+                pen.setColor(self.primary_color)
+                painter = QPainter(self.canvas.pixmap())
+                painter.setPen(pen)
+                painter.drawLine(self.points[0].x, self.points[0].y,
+                                 event.x(), event.y())
+                painter.end()
+                self.canvas.repaint()
+            if len(self.points) == 2:
+                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                pen = QPen()
+                pen.setWidth(1)
+                pen.setColor(self.primary_color)
+                painter = QPainter(self.canvas.pixmap())
+                painter.setPen(pen)
+                painter.drawLine(self.points[0].x, self.points[0].y,
+                                 event.x(), event.y())
+                painter.drawLine(self.points[1].x, self.points[1].y,
+                                 event.x(), event.y())
+                painter.drawLine(self.points[0].x, self.points[0].y,
+                                 self.points[1].x, self.points[1].y)
                 painter.end()
                 self.canvas.repaint()
 

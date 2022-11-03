@@ -78,6 +78,11 @@ class Operations:
         color = self.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.draw_circle_parametric, p0=p0, p1=p1, color=color)
 
+    def draw_triangle(self, **kwargs):
+        p0, p1, p2 = kwargs['points']
+        color = self.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.draw_triangle, p0=p0, p1=p1, p2=p2, color=color)
+
 
 class CG():
     def __init__(self, canvas: QLabel):
@@ -89,7 +94,8 @@ class CG():
                           OPCODE.DRAW_LINE_BRESENHAM: self.f.draw_line_bresenham,
                           OPCODE.DRAW_CIRCLE: self.f.draw_circle,
                           OPCODE.DRAW_CIRCLE_BRESENHAM: self.f.draw_circle_bresenham,
-                            OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
+                          OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
+                          OPCODE.DRAW_TRIANGLE: self.f.draw_triangle
                           }
 
         if code in all_operations:
