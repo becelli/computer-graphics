@@ -188,4 +188,49 @@ pub fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba)
     new_image
 }
 
+fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f32) -> bool {
+    let r1 = color1[0] as f32;
+    let g1 = color1[1] as f32;
+    let b1 = color1[2] as f32;
+    let r2 = color2[0] as f32;
+    let g2 = color2[1] as f32;
+    let b2 = color2[2] as f32;
+    let delta_r = (r1 - r2).abs();
+    let delta_g = (g1 - g2).abs();
+    let delta_b = (b1 - b2).abs();
+    let max = 255.0;
+    let delta_r = delta_r / max;
+    let delta_g = delta_g / max;
+    let delta_b = delta_b / max;
+    let delta = (delta_r + delta_g + delta_b) / 3.0;
+    delta < tolerance
+}
+pub fn flood_fill(image: Image, p0: Point, color: Rgba) -> Image {
+    let mut new_image: Image = image.clone();
+    let height = image.len();
+    let width = image[0].len();
+    
+    // fill the region that is 10% similar to the color of the point.
+    let tolerance = 0.1;
+    let color_to_fill = new_image[p0.1 as usize][p0.0 as usize];
+    let mut stack: Vec<Point> = Vec::new();
+    stack.push(p0);
+
+    while !stack.is_empty() {
+        let point = stack.pop().unwrap();
+        let x = point.0;
+        let y = point.1;
+        if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
+            let current_color = new_image[y as usize][x as usize];
+            if is_similar_color(current_color, color_to_fill, tolerance) {
+                new_image[y as usize][x as usize] = color;
+                stack.push((x + 1, y));
+                stack.push((x - 1, y));
+                stack.push((x, y + 1));
+                stack.push((x, y - 1));
+            }
+        }
+    }
+    new_image
+}
 

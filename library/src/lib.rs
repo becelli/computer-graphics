@@ -39,6 +39,11 @@ fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba) -> 
     Ok(operations::draw_triangle(image, p0, p1, p2, color))
 }
 
+#[pyfunction]
+fn flood_fill(image: Image, p0: Point, color: Rgba) -> PyResult<Image> {
+    Ok(operations::flood_fill(image, p0, color))
+}
+
 #[pymodule]
 fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(draw_line, m)?)?;
@@ -47,5 +52,6 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(draw_circle_bresenham, m)?)?;
     m.add_function(wrap_pyfunction!(draw_circle_parametric, m)?)?;
     m.add_function(wrap_pyfunction!(draw_triangle, m)?)?;
+    m.add_function(wrap_pyfunction!(flood_fill, m)?)?;
     Ok(())
 }

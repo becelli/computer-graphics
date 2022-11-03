@@ -83,6 +83,11 @@ class Operations:
         color = self.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.draw_triangle, p0=p0, p1=p1, p2=p2, color=color)
 
+    def flood_fill(self, **kwargs):
+        p0 = kwargs['point']
+        color = self.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.flood_fill, p0=p0, color=color)
+
 
 class CG():
     def __init__(self, canvas: QLabel):
@@ -90,13 +95,15 @@ class CG():
         self.f = Operations(None)
 
     def apply(self, code: int, **kwargs):
-        all_operations = {OPCODE.DRAW_LINE: self.f.draw_line,
-                          OPCODE.DRAW_LINE_BRESENHAM: self.f.draw_line_bresenham,
-                          OPCODE.DRAW_CIRCLE: self.f.draw_circle,
-                          OPCODE.DRAW_CIRCLE_BRESENHAM: self.f.draw_circle_bresenham,
-                          OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
-                          OPCODE.DRAW_TRIANGLE: self.f.draw_triangle
-                          }
+        all_operations = {
+            OPCODE.DRAW_LINE: self.f.draw_line,
+            OPCODE.DRAW_LINE_BRESENHAM: self.f.draw_line_bresenham,
+            OPCODE.DRAW_CIRCLE: self.f.draw_circle,
+            OPCODE.DRAW_CIRCLE_BRESENHAM: self.f.draw_circle_bresenham,
+            OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
+            OPCODE.DRAW_TRIANGLE: self.f.draw_triangle,
+            OPCODE.FLOOD_FILL: self.f.flood_fill
+        }
 
         if code in all_operations:
             self.update_reference_image()

@@ -110,6 +110,14 @@ class Application(QMainWindow):
         self.buttons.append(triangle_button)
         toolbar.addWidget(triangle_button)
 
+        flood_fill_button = QPushButton()
+        flood_fill_button.setIcon(QIcon("icons/flood-fill.svg"))
+        flood_fill_button.setToolTip("Flood Fill Algorithm")
+        flood_fill_button.clicked.connect(
+            lambda: self.select_button(flood_fill_button, OPCODE.FLOOD_FILL))
+        self.buttons.append(flood_fill_button)
+        toolbar.addWidget(flood_fill_button)
+
         self.select_button(none_button, OPCODE.NONE)
 
     def display_system_color_selector(self):
@@ -141,6 +149,7 @@ class Application(QMainWindow):
                     self.CGLIB.apply(
                         self.operation, points=self.points, color=self.primary_color)
                     self.points = []
+            return
 
         if self.operation == OPCODE.DRAW_TRIANGLE:
             if len(self.points) < 3:
@@ -153,6 +162,13 @@ class Application(QMainWindow):
                     self.CGLIB.apply(
                         self.operation, points=self.points, color=self.primary_color)
                     self.points = []
+            return
+
+        if self.operation == OPCODE.FLOOD_FILL:
+            point = Point(event.x(), event.y())
+            self.CGLIB.apply(
+                self.operation, point=point, color=self.primary_color)
+            return
 
     def mouse_move_event(self, event: QMouseEvent):
         self.display_current_pixel_info(event)
@@ -187,6 +203,7 @@ class Application(QMainWindow):
                                     radius, radius * 2, radius * 2)
                 painter.end()
                 self.canvas.repaint()
+            return
 
         if self.operation == OPCODE.DRAW_TRIANGLE:
             if len(self.points) == 1:
@@ -215,6 +232,7 @@ class Application(QMainWindow):
                                  self.points[1].x, self.points[1].y)
                 painter.end()
                 self.canvas.repaint()
+            return
 
         self.display_current_pixel_info(event)
 
