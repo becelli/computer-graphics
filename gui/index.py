@@ -20,6 +20,7 @@ class Application(QMainWindow):
         self.buttons: list[QPushButton] = []
         self.current_color_widget: QLabel = None
         self.points: list[Point] = []
+        self.selection_points: list[Point] = []
         self.primary_color = QColor(
             rdint(0, 255), rdint(0, 255), rdint(0, 255))
         self.CGLIB = None
@@ -118,6 +119,14 @@ class Application(QMainWindow):
         self.buttons.append(flood_fill_button)
         toolbar.addWidget(flood_fill_button)
 
+        selection_area_button = QPushButton()
+        selection_area_button.setIcon(QIcon("icons/selection.svg"))
+        selection_area_button.setToolTip("Selection Area")
+        selection_area_button.clicked.connect(
+            lambda: self.select_button(selection_area_button, OPCODE.SELECTION_AREA))
+        self.buttons.append(selection_area_button)
+        toolbar.addWidget(selection_area_button)
+
         self.select_button(none_button, OPCODE.NONE)
 
     def display_system_color_selector(self):
@@ -133,19 +142,24 @@ class Application(QMainWindow):
         self.canvas.setMouseTracking(True)
         self.canvas.mousePressEvent = self.mouse_click_event
         self.canvas.mouseMoveEvent = self.mouse_move_event
+        # self.canvas.mouseReleaseEvent = self.mouse_release_event
 
     def mouse_click_event(self, event: QMouseEvent):
         if self.operation == OPCODE.NONE:
             self.points = []
             return
+
         if self.operation in TWO_POINTS_OPERATIONS:
+            if len(self.points) == 0:
+                self.canvas.setPixmap(self.backup_canvas)
+
             if len(self.points) < 2:
                 point = Point(event.x(), event.y())
                 self.points.append(point)
                 if len(self.points) == 1:
-                    self.backup_image = self.canvas.pixmap().toImage()
+                    self.backup_pixmap = self.canvas.pixmap()
                 if len(self.points) == 2:
-                    self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                    self.canvas.setPixmap(self.backup_image)
                     self.CGLIB.apply(
                         self.operation, points=self.points, color=self.primary_color)
                     self.points = []
@@ -187,6 +201,7 @@ class Application(QMainWindow):
                 painter.end()
                 self.canvas.repaint()
             return
+
         if self.operation == OPCODE.DRAW_CIRCLE or self.operation == OPCODE.DRAW_CIRCLE_BRESENHAM or OPCODE.DRAW_CIRCLE_PARAMETRIC == self.operation:
             if len(self.points) == 1:
                 self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
@@ -235,6 +250,28 @@ class Application(QMainWindow):
             return
 
         self.display_current_pixel_info(event)
+
+    def mouse_release_event(self, event: QMouseEvent):
+        if self.operation == OPCODE.NONE:
+            return
+
+        # if self.operation == OPCODE.SELECTION_AREA:
+        #     # draw a dashed square over the canvas. It should not be saved in the canvas
+        #     if len(self.points) < 2:
+        #         self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+        #         pen = QPen()
+        #         pen.setWidth(1)
+        #         pen.setColor(QColor(0, 0, 0))
+        #         pen.setStyle(Qt.DashLine)
+        #         painter = QPainter(self.canvas.pixmap())
+        #         painter.setPen(pen)
+        #         painter.drawRect(self.selection_points[0].x, self.selection_points[0].y,
+        #                          event.x() - self.selection_points[0].x, event.y() - self.selection_points[0].y)
+        #         painter.end()
+        #         self.canvas.repaint()
+        #         self.points = []
+        #         self.selection_points = []
+        #     return
 
     def select_button(self, button: QPushButton, opcode: int):
         for b in self.buttons:

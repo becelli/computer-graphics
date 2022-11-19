@@ -10,6 +10,7 @@ class OPCODE:
     DRAW_CIRCLE_PARAMETRIC = 5
     DRAW_TRIANGLE = 6
     FLOOD_FILL = 7
+    SELECTION_AREA = 8
 
 
 @dataclass

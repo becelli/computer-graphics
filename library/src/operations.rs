@@ -1,6 +1,6 @@
 use crate::common::*;
 
-use std::f32::consts::PI;
+use std::{f32::consts::PI, collections::VecDeque};
 //use ndarray::arr2;
 
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
@@ -213,30 +213,28 @@ pub fn flood_fill(image: Image, p0: Point, color: Rgba) -> Image {
     let width = image[0].len();
     
     // fill the region that is 10% similar to the color of the point.
-    let tolerance = 0.1;
-    let color_to_fill = new_image[p0.1 as usize][p0.0 as usize];
-    let mut stack: Vec<Point> = Vec::new();
-    stack.push(p0);
-
-    while !stack.is_empty() {
-        let point = stack.pop().unwrap();
+    let tolerance = 0.2;
+    let old_color = new_image[p0.1 as usize][p0.0 as usize];
+    let mut queue: VecDeque<Point> = VecDeque::new();
+    queue.push_back(p0);
+    while queue.len() > 0 {
+        let point = queue.pop_front().unwrap();
         let x = point.0;
         let y = point.1;
         if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-            let current_color = new_image[y as usize][x as usize];
-            if is_similar_color(current_color, color_to_fill, tolerance) {
+            if is_similar_color(old_color, new_image[y as usize][x as usize], tolerance) {
                 new_image[y as usize][x as usize] = color;
-                stack.push((x + 1, y));
-                stack.push((x - 1, y));
-                stack.push((x, y + 1));
-                stack.push((x, y - 1));
+                queue.push_back((x + 1, y));
+                queue.push_back((x - 1, y));
+                queue.push_back((x, y + 1));
+                queue.push_back((x, y - 1));
             }
         }
     }
     new_image
 }
 
-// pub fn project_to_2d(image: Image, edges: &[Edge], matrix: &[i32])-> Image{
+//  pub fn project_to_2d(image: Image, edges: &[Edge], matrix: &[i32])-> Image{
 //     let mut new_image: Image = image.clone();
     
 //     new_image
