@@ -1,6 +1,7 @@
 use crate::common::*;
 
 use std::f32::consts::PI;
+//use ndarray::arr2;
 
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
@@ -167,7 +168,8 @@ pub fn draw_circle_parametric(image: Image, p0: Point, p1: Point, color: Rgba) -
     let width = image[0].len() as i32;
     let radius = calculate_radius(p0, p1);
     let mut a: f32 = 0.0;
-    let step = 0.01;
+    // step is proportional to the radius
+    let step = 1.0 / (radius).pow(2) as f32;
     while a < 2.0 * PI {
         let x = (radius as f32 * a.cos()) as i32;
         let y = (radius as f32 * a.sin()) as i32;
@@ -234,3 +236,139 @@ pub fn flood_fill(image: Image, p0: Point, color: Rgba) -> Image {
     new_image
 }
 
+// pub fn project_to_2d(image: Image, edges: &[Edge], matrix: &[i32])-> Image{
+//     let mut new_image: Image = image.clone();
+    
+//     new_image
+// }
+
+pub fn select_area(image: Image, p0: Point, p1: Point)-> Image {
+    let mut new_image: Image = image.clone();
+    let p2: Point = (p0.0, p1.1);
+    let p3: Point = (p1.0, p0.1);
+    let color: Rgba = [0, 0, 0, 0];
+    new_image = draw_line_bresenham(new_image, p0, p2, color);
+    new_image = draw_line_bresenham(new_image, p0, p3, color);
+    new_image = draw_line_bresenham(new_image, p1, p2, color);
+    new_image = draw_line_bresenham(new_image, p1, p3, color);
+    new_image
+}
+
+fn assign_code_to_point(p0: &Point, borders: &Border) -> u8 {
+    let mut code: u8 = 0b0000;
+    if p0.1 > borders.top {
+        code += 0b1000;
+    } else if p0.1 < borders.bottom {
+        code += 0b0100;
+    }
+
+    if p0.0 > borders.right {
+        code += 0b0010;
+    } else if p0.0 < borders.left {
+        code += 0b0001;
+    }
+    code
+}
+
+//this function assumes the 3 points are colinear, but checks if p2 is between p0 and p1
+fn is_inside_segment(p0: &Point, p1: &Point, p2: &Point) -> bool{
+    let mut inside: bool = false;
+    if p0.0 < p1.0{
+        if p2.0 > p0.0 && p2.0 < p1.0{
+            inside = true;
+        }
+    }else{
+        if p2.0 < p0.0 && p2.0 > p1.0{
+            inside = true;
+        }
+    }
+    inside
+}
+
+pub fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
+    //calculate which points will be inside the screen
+    let delta_y = p1.1 - p0.1;
+    let delta_x = p1.0 - p0.0;
+    let m = delta_y as f32 / delta_x as f32;
+    
+    // calculating the extremes of the line
+    let xt: i32 = ((1.0 / m) * (borders.top - p0.1) as f32 + p0.0 as f32).round() as i32;
+    let xb: i32 = ((1.0 / m) * (borders.bottom - p0.1) as f32 + p0.0 as f32).round() as i32;
+    let yr: i32 = (m * (borders.right - p0.0) as f32 + p0.1 as f32).round() as i32;
+    let yl: i32 = (m * (borders.left - p0.0) as f32 + p0.1 as f32).round() as i32;
+    
+    // create a array of points localized at the edges of the screen
+    let points: [Point; 4] = [(borders.left, yl), (xt, borders.top), (xb, borders.bottom), (borders.right, yr)];
+    let mut line_points: Vec<Point> = vec![];
+
+    // verify which points are inside the screen
+    for point in points.iter() {
+        if assign_code_to_point(point, &borders) == 0 {
+            let len = line_points.len() as usize;
+            line_points[len] = *point;
+        }
+    }
+    
+    
+    let new_line: Edge;
+    let code_p0 = assign_code_to_point(p0, borders);
+    let code_p1 = assign_code_to_point(p1, borders);
+    //check if 2 points are inside the screen, if not, then return none
+    if line_points.len() > 0 {
+        let mut new_p0: Point =  line_points[0];
+        let mut new_p1: Point = line_points[1];
+        
+        //check if one of the given points is already inside the screen
+        if code_p0 == 0 {
+            //this point is inside the screen
+            new_p0 = *p0;
+            for point in line_points.iter() {
+                if is_inside_segment(p0, p1, point){
+                    new_p1 = *point;
+                    break;
+                }
+            }
+        }
+        else if code_p1 == 0 {
+            //this point is inside the screen
+            new_p1 = *p1;
+            for point in line_points.iter(){
+                if is_inside_segment(p0, p1, point){
+                    new_p0 = *point;
+                    break;
+                }
+            }
+        }
+        new_line = (new_p0, new_p1);       
+        Some(new_line)
+    }
+    else {
+        None
+    }
+}
+
+pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundary: Edge)-> Image {
+    let mut new_image: Image = image.clone();
+    //find the points of the borders of the screen
+    let (xl, xr) = (boundary.0.0.min(boundary.1.0), boundary.1.0.max(boundary.1.0));
+    let (yt, yb) = (boundary.0.1.min(boundary.1.1), boundary.1.1.max(boundary.1.1));
+    let borders = Border {top: yt, bottom: yb, right: xr, left: xl};
+    
+    //assing the code to each point of the line
+    let code_p0 = assign_code_to_point(&p0, &borders);
+    let code_p1 = assign_code_to_point(&p1, &borders);
+
+    if code_p0 == 0 && code_p1 == 0 {
+        new_image = draw_line_bresenham(new_image, p0, p1, color);
+    }else {
+        if code_p0 & code_p1 == 0 {
+            let clipped_line: Option<Edge> = points_in_screen(&p0, &p1, &borders);
+            if clipped_line.is_some(){
+                let (new_p0, new_p1) = clipped_line.unwrap();
+                new_image = draw_line_bresenham(new_image, new_p0, new_p1, color);
+            }
+        }
+    }
+
+    new_image
+}

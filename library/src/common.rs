@@ -1,3 +1,12 @@
 pub type Rgba = [u8; 4];
 pub type Point = (i32, i32);
 pub type Image = Vec<Vec<Rgba>>;
+pub type Edge = (Point, Point);
+// pub type Border = (i32, i32, i32, i32);
+
+pub struct Border {
+    pub top: i32,
+    pub bottom: i32,
+    pub left: i32,
+    pub right: i32,
+}
