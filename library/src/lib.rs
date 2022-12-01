@@ -3,7 +3,7 @@ use pyo3::wrap_pyfunction;
 
 mod common;
 mod operations;
-use common::{Image, Point, Rgba, Edge};
+use common::{Image, Point, Rgba, Edge, HomogeneousEdge};
 
 // #[pyfunction]
 // fn draw_line(image: Image) -> PyResult<Image> {
@@ -54,6 +54,11 @@ fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundary: E
     Ok(operations::cohen_sutherland(image, p0, p1,color, boundary))
 }
 
+#[pyfunction]
+fn project_to_2d(image: Image, edges: Vec<HomogeneousEdge>, matrix: [[f32;4];4], scale:[f32;4], rotation_degrees: f32, rotation_axis: char, rotate_around_center: bool)-> PyResult<Image> {
+    Ok(operations::project_to_2d(image, edges, matrix, scale, rotation_degrees, rotation_axis, rotate_around_center))
+}
+
 #[pymodule]
 fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(draw_line, m)?)?;
@@ -65,5 +70,6 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flood_fill, m)?)?;
     m.add_function(wrap_pyfunction!(select_area, m)?)?;
     m.add_function(wrap_pyfunction!(cohen_sutherland, m)?)?;
+    m.add_function(wrap_pyfunction!(project_to_2d, m)?)?;
     Ok(())
 }

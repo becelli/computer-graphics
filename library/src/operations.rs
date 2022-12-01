@@ -1,7 +1,7 @@
 use crate::common::*;
 
 use std::{f32::consts::PI, collections::VecDeque};
-//use ndarray::arr2;
+use ndarray::{arr1, arr2, OwnedRepr, Dim, ArrayBase};
 
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
@@ -183,7 +183,6 @@ pub fn draw_circle_parametric(image: Image, p0: Point, p1: Point, color: Rgba) -
 }
 
 pub fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba) -> Image {
-
     let mut new_image = draw_line_bresenham(image, p0, p1, color);
     new_image = draw_line_bresenham(new_image, p1, p2, color);
     new_image = draw_line_bresenham(new_image, p2, p0, color);
@@ -207,6 +206,7 @@ fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f32) -> bool {
     let delta = (delta_r + delta_g + delta_b) / 3.0;
     delta < tolerance
 }
+
 pub fn flood_fill(image: Image, p0: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
     let height = image.len();
@@ -234,12 +234,144 @@ pub fn flood_fill(image: Image, p0: Point, color: Rgba) -> Image {
     new_image
 }
 
-//  pub fn project_to_2d(image: Image, edges: &[Edge], matrix: &[i32])-> Image{
-//     let mut new_image: Image = image.clone();
-    
-//     new_image
-// }
+//convert a homogeneous point to point
+fn homogeneous_point_to_point(h_point: HomogeneousPoint) -> Point{
+    let normalized_h_point: HomogeneousPoint;
 
+    if h_point.3 != 0{
+        normalized_h_point = (h_point.0/h_point.3, h_point.1/h_point.3, h_point.2/h_point.3, 1);
+    }else{
+        normalized_h_point = h_point;
+    }
+    let point:Point = (normalized_h_point.0, normalized_h_point.1);
+    point
+}
+
+//apply the rotation matrix to the matrix
+fn scale_matrix_3d(t1_matrix: [[f32;4];4], scale:[f32;4]) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+    let t2_matrix: [[f32;4]; 4] =  [[scale[0],0.,0.,0.],
+                                    [0.,scale[1],0.,0.],
+                                    [0.,0.,scale[2],0.], 
+                                    [0.,0.,0.,scale[3]]];
+    let t3_matrix = arr2(&t1_matrix)*arr2(&t2_matrix);
+    t3_matrix
+}
+
+fn translation_matrix_3d(x_translation: i32, y_translation: i32, z_translation: i32) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>{
+    let matrix: [[f32;4]; 4] =  [[1.,                   0.,                   0.,                   0.],
+                                 [0.,                   1.,                   0.,                   0.],
+                                 [0.,                   0.,                   1.,                   0.], 
+                                 [x_translation as f32, y_translation as f32, z_translation as f32, 1.]];
+    let translation_matrix = arr2(&matrix);
+    translation_matrix
+}
+
+//apply the rotation matrix to the matrix
+fn rotation_matrix_3d(rotation_degrees: f32, rotation_axis: char, rotate_around_center:bool)-> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+    let mut matrix = [[1.,0.,0.,0.],
+                                     [0.,1.,0.,0.],
+                                     [0.,0.,1.,0.], 
+                                     [0.,0.,0.,1.]];
+    match rotation_axis{
+        'x' => {
+            matrix[1][1] *= rotation_degrees.to_radians().cos();
+            matrix[1][2] *= -rotation_degrees.to_radians().sin();
+            matrix[2][1] *= rotation_degrees.to_radians().sin();
+            matrix[2][2] *= rotation_degrees.to_radians().cos();
+        }
+        'y' => {
+            matrix[0][0] *= rotation_degrees.to_radians().cos();
+            matrix[0][2] *= -rotation_degrees.to_radians().sin();
+            matrix[2][0] *= rotation_degrees.to_radians().sin();
+            matrix[2][2] *= rotation_degrees.to_radians().cos();
+        }
+        'z' => {
+            matrix[0][0] *= rotation_degrees.to_radians().cos();
+            matrix[0][1] *= -rotation_degrees.to_radians().sin();
+            matrix[1][0] *= rotation_degrees.to_radians().sin();
+            matrix[1][1] *= rotation_degrees.to_radians().cos();
+        }
+        _ => {
+            
+        }
+    }
+    //rotate around the center of the image
+    let final_matrix: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>;
+    if rotate_around_center{
+        //translate the matrix to the center, the apply the rotation and then translate it back to the original position
+        let temp_matrix = translation_matrix_3d(-50, -75, -50)*arr2(&matrix);
+        final_matrix = temp_matrix * translation_matrix_3d(50, 75, 50);
+    }else{
+        final_matrix = arr2(&matrix);
+    }
+    final_matrix
+}
+
+//apply the transformation matrix to the set of edges.
+fn apply_transformation(edges: Vec<HomogeneousEdge>, transformation_matrix:ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> Vec<HomogeneousEdge>{
+    let mut new_edges:Vec<HomogeneousEdge> = Vec::new();
+    
+    for edge in edges.iter(){
+        let point1 = edge.0;
+        let point2 = edge.1;
+        
+        //apply the transformation for the first point in the edge
+        let product = arr1(&[point1.0 as f32, point1.1 as f32, point1.2 as f32, point1.3 as f32]).dot(&transformation_matrix);
+        let new_point1:HomogeneousPoint = (product[0]/product[3], product[1]/product[3], product[2]/product[3], 1.);
+        
+        //apply the transformation for the second point in the edge
+        let product = arr1(&[point2.0 as f32, point2.1 as f32, point2.2 as f32, point2.3 as f32]).dot(&transformation_matrix);
+        let new_point2:HomogeneousPoint = (product[0]/product[3], product[1]/product[3], product[2]/product[3], 1.);
+
+        //make a new set of homogeneous edge
+        let new_edge = (new_point1, new_point2);
+        new_edges.push(new_edge);
+    }
+    new_edges
+}
+
+//project the a 3d set of points to 2d. In this function the order of operations are:
+//shearing -> scale -> rotation
+//pub fn project_to_2d(image: Image, edges: Vec<HomogeneousEdge>, matrix: [[f32;4];4], scale:[f32;4], rotation_degrees: f32, rotation_axis: char, rotate_around_center:bool)-> Image{
+pub fn project_to_2d(image: Image, edges: Vec<HomogeneousEdge>)-> Image{
+    let mut new_image: Image = image.clone();
+    for edge in edges.iter(){
+        new_image = cohen_sutherland(new_image, homogeneous_point_to_point(edge.0), homogeneous_point_to_point(edge.1), [127,127,127,127], ((0,0),(image.len() as i32, image[0].len() as i32)));
+    }
+    new_image
+}
+
+pub fn rotate_object(image: Image, edges: Vec<HomogeneousEdge>, rotation_degrees: f32, rotation_axis: char, rotate_around_center:bool)-> (Image, Vec<HomogeneousEdge>){
+    let mut new_image: Image = image.clone();
+    let transformation_matrix = rotation_matrix_3d(rotation_degrees, rotation_axis, rotate_around_center);
+    
+    //applying the transformation for each point in edge
+    let new_edges:Vec<HomogeneousEdge> = apply_transformation(edges, transformation_matrix);
+    //drawing each edge of the drawing
+    project_to_2d(image, new_edges);
+    (new_image, new_edges)
+}
+
+pub fn shear_object(image: Image, edges: Vec<HomogeneousEdge>, rotation_degrees: f32, rotation_axis: char, rotate_around_center:bool)-> (Image, Vec<HomogeneousEdge>){
+    let mut new_image: Image = image.clone();
+    let transformation_matrix = rotation_matrix_3d(rotation_degrees, rotation_axis, rotate_around_center);
+    
+    //applying the transformation for each point in edge
+    let new_edges:Vec<HomogeneousEdge> = apply_transformation(edges, transformation_matrix);
+    //drawing each edge of the drawing
+    project_to_2d(image, new_edges);
+    (new_image, new_edges)
+}
+
+pub fn scale_object(image: Image, edges: Vec<HomogeneousEdge>, scale:[f32;4]){
+
+}
+
+pub fn translate_object(image: Image, edges: Vec<HomogeneousEdge>, matrix: [[f32;4];4]){
+    
+}
+
+//show the selected area
 pub fn select_area(image: Image, p0: Point, p1: Point)-> Image {
     let mut new_image: Image = image.clone();
     let p2: Point = (p0.0, p1.1);
@@ -287,30 +419,55 @@ pub fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge
     //calculate which points will be inside the screen
     let delta_y = p1.1 - p0.1;
     let delta_x = p1.0 - p0.0;
-    let m = delta_y as f32 / delta_x as f32;
     
-    // calculating the extremes of the line
-    let xt: i32 = ((1.0 / m) * (borders.top - p0.1) as f32 + p0.0 as f32).round() as i32;
-    let xb: i32 = ((1.0 / m) * (borders.bottom - p0.1) as f32 + p0.0 as f32).round() as i32;
-    let yr: i32 = (m * (borders.right - p0.0) as f32 + p0.1 as f32).round() as i32;
-    let yl: i32 = (m * (borders.left - p0.0) as f32 + p0.1 as f32).round() as i32;
+    //calculate the points of the line which crosses the screen borders
+    let xt:i32;
+    let xb:i32;
+    let yr:i32;
+    let yl:i32;
+    let mut points: Vec<Point> = Vec::new();
+    if delta_x == 0 {
+        xb = p0.0;
+        xt = p0.0;
+        yr = borders.top;
+        yl = borders.bottom;
+        points.push((xb, yl));
+        points.push((xt, yr));
+    }else if delta_y == 0 {
+        xb = borders.left;
+        xt = borders.right;
+        yr = p0.1;
+        yl = p0.1;
+        points.push((xb, yl));
+        points.push((xt, yr));
+    }else{
+        let m: f32 = delta_y as f32/delta_x as f32;
+        xt = ((1.0 / m) * (borders.top - p0.1) as f32 + p0.0 as f32).round() as i32;
+        xb = ((1.0 / m) * (borders.bottom - p0.1) as f32 + p0.0 as f32).round() as i32;
+        yr = (m * (borders.right - p0.0) as f32 + p0.1 as f32).round() as i32;
+        yl = (m * (borders.left - p0.0) as f32 + p0.1 as f32).round() as i32;    
+        points.push((borders.left, yl));
+        points.push((xt, borders.top));
+        points.push((xb, borders.bottom));
+        points.push((borders.right, yr));
+    }
     
     // create a array of points localized at the edges of the screen
-    let points: [Point; 4] = [(borders.left, yl), (xt, borders.top), (xb, borders.bottom), (borders.right, yr)];
+    //let points: [Point; 4] = [(borders.left, yl), (xt, borders.top), (xb, borders.bottom), (borders.right, yr)];
     let mut line_points: Vec<Point> = vec![];
 
     // verify which points are inside the screen
     for point in points.iter() {
         if assign_code_to_point(point, &borders) == 0 {
-            let len = line_points.len() as usize;
-            line_points[len] = *point;
+            line_points.push(*point);
         }
     }
     
-    
+    //check if at least one of the original point is inside the screen
     let new_line: Edge;
     let code_p0 = assign_code_to_point(p0, borders);
     let code_p1 = assign_code_to_point(p1, borders);
+    
     //check if 2 points are inside the screen, if not, then return none
     if line_points.len() > 0 {
         let mut new_p0: Point =  line_points[0];
@@ -348,18 +505,19 @@ pub fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge
 pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundary: Edge)-> Image {
     let mut new_image: Image = image.clone();
     //find the points of the borders of the screen
-    let (xl, xr) = (boundary.0.0.min(boundary.1.0), boundary.1.0.max(boundary.1.0));
-    let (yt, yb) = (boundary.0.1.min(boundary.1.1), boundary.1.1.max(boundary.1.1));
+    let (xl, xr) = (boundary.0.0.min(boundary.1.0), boundary.0.0.max(boundary.1.0));
+    let (yt, yb) = (boundary.0.1.max(boundary.1.1), boundary.0.1.min(boundary.1.1));
     let borders = Border {top: yt, bottom: yb, right: xr, left: xl};
-    
-    //assing the code to each point of the line
+        
+    //assign the code to each point of the line
     let code_p0 = assign_code_to_point(&p0, &borders);
     let code_p1 = assign_code_to_point(&p1, &borders);
-
+    
+    //check if the line is entirely inside screen, if not clip it
     if code_p0 == 0 && code_p1 == 0 {
         new_image = draw_line_bresenham(new_image, p0, p1, color);
     }else {
-        if code_p0 & code_p1 == 0 {
+        if (code_p0 & code_p1) == 0 {
             let clipped_line: Option<Edge> = points_in_screen(&p0, &p1, &borders);
             if clipped_line.is_some(){
                 let (new_p0, new_p1) = clipped_line.unwrap();
@@ -367,6 +525,5 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
             }
         }
     }
-
     new_image
 }

@@ -127,6 +127,14 @@ class Application(QMainWindow):
         self.buttons.append(selection_area_button)
         toolbar.addWidget(selection_area_button)
 
+        project_to_2d_button = QPushButton()
+        project_to_2d_button.setIcon(QIcon("icons/circle-full.svg"))
+        project_to_2d_button.setToolTip("Project to 2d")
+        project_to_2d_button.clicked.connect(
+            lambda: self.select_button(project_to_2d_button, OPCODE.PROJECT_TO_2D))
+        self.buttons.append(project_to_2d_button)
+        toolbar.addWidget(project_to_2d_button)
+        
         self.select_button(none_button, OPCODE.NONE)
 
     def display_system_color_selector(self):
@@ -182,6 +190,11 @@ class Application(QMainWindow):
             point = Point(event.x(), event.y())
             self.CGLIB.apply(
                 self.operation, point=point, color=self.primary_color)
+            return
+
+        if self.operation == OPCODE.PROJECT_TO_2D:
+            self.CGLIB.apply(
+                self.operation)
             return
 
     def mouse_move_event(self, event: QMouseEvent):
