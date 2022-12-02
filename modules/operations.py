@@ -126,13 +126,13 @@ class Operations:
     def rotate(self, **kwargs):
         w, h = self.img.width(), self.img.height()
         image = self.get_img_pixels(w, h)
-        edges = [((100, 0, 0, 1), (0, 100, 0, 1)), ((0, 0, 0, 1), (100, 0, 0, 1)), ((50, 150, 0, 1),
-                                                                                    (0, 100, 0, 1)), ((50, 150, 0, 1), (100, 100, 0, 1)), ((100, 100, 0, 1), (100, 0, 0, 1))]
-        degrees = 0.0
+        edges = [((100, 100, 0, 1), (100, 200, 0, 1)), ((100, 100, 0, 1), (200, 100, 0, 1)), ((150, 250, 0, 1),
+                                                                                  (100, 200, 0, 1)), ((150, 250, 0, 1), (200, 200, 0, 1)), ((200, 200, 0, 1), (200, 100, 0, 1))]
+        degrees = 10.0
         axis = 'z'
 
         image_result, edges_result = cglib.rotate_object(
-            image, edges=edges, degrees=degrees, axis=axis, center=True)
+            image, edges=edges, degrees=degrees, axis=axis, center=False)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         self.img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return self.img
@@ -152,7 +152,7 @@ class CG():
             OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
             OPCODE.DRAW_TRIANGLE: self.f.draw_triangle,
             OPCODE.FLOOD_FILL: self.f.flood_fill,
-            OPCODE.PROJECT_TO_2D: self.f.scale,
+            OPCODE.PROJECT_TO_2D: self.f.rotate,
         }
 
         if code in all_operations:

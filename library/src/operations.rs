@@ -353,8 +353,8 @@ fn get_rotation_matrix_3d(
     if rotate_around_center {
         let center: HomogeneousPoint = calculate_center(&edges);
         //translate the matrix to the center, the apply the rotation and then translate it back to the original position
-        let temp_matrix = translation_matrix_3d(-center.0, -center.1, -center.2) * arr2(&matrix);
-        final_matrix = temp_matrix * translation_matrix_3d(center.0, center.1, center.2);
+        let temp_matrix = translation_matrix_3d(-center.0, -center.1, -center.2).dot(&arr2(&matrix));
+        final_matrix = temp_matrix.dot(&translation_matrix_3d(center.0, center.1, center.2));
     } else {
         final_matrix = arr2(&matrix);
     }
@@ -419,15 +419,16 @@ fn project_to_2d(image: Image, edges: &Vec<HomogeneousEdge>) -> Image {
     // for each edge, print it
 
     for edge in edges.iter() {
-        println!("edge.0: {:?}, edge.1: {:?}", edge.0, edge.1);
+        //println!("edge.0: {:?}, edge.1: {:?}", edge.0, edge.1);
         let mut p0 = homogeneous_point_to_point(edge.0);
         let mut p1 = homogeneous_point_to_point(edge.1);
-        println!("p0: {:?}, p1: {:?}", p0, p1);
+        //println!("p0: {:?}, p1: {:?}", p0, p1);
+        //println!("p0: {:?}, p1: {:?}, y_max{}", p0, p1, y_max);
         p0.1 = y_max - p0.1;
         p1.1 = y_max - p1.1;
         let color = [0, 0, 0, 255];
-        println!("p0: {:?}, p1: {:?}", p0, p1);
-        let boundary = ((image.len() as i32, 0), (0, image[0].len() as i32));
+        println!("Inicio: p0: {:?}, p1: {:?}", p0, p1);
+        let boundary = ((0, 0), (image[0].len() as i32, image.len() as i32));
         //println!("boundary: {:?}", boundary);
         new_image = cohen_sutherland(new_image, p0, p1, color, boundary);
     }
@@ -516,15 +517,15 @@ pub fn select_area(image: Image, p0: Point, p1: Point) -> Image {
 
 fn assign_code_to_point(p0: &Point, borders: &Border) -> u8 {
     let mut code: u8 = 0b0000;
-    if p0.0 >= borders.top {
+    if p0.1 >= borders.top {
         code += 0b1000;
-    } else if p0.0 < borders.bottom {
+    } else if p0.1 < borders.bottom {
         code += 0b0100;
     }
 
-    if p0.1 >= borders.right {
+    if p0.0 >= borders.right {
         code += 0b0010;
-    } else if p0.1 < borders.left {
+    } else if p0.0 < borders.left {
         code += 0b0001;
     }
     code
@@ -563,6 +564,7 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         yl = borders.bottom;
         points.push((xb, yl));
         points.push((xt, yr));
+        println!("Caso 1");
     } else if delta_y == 0 {
         xb = borders.left;
         xt = borders.right - 1;
@@ -570,6 +572,7 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         yl = p0.1;
         points.push((xb, yl));
         points.push((xt, yr));
+        println!("Caso 2");
     } else {
         let m: f32 = delta_y as f32 / delta_x as f32;
         xt = ((1.0 / m) * (borders.top - p0.1) as f32 + p0.0 as f32).round() as i32;
@@ -580,6 +583,7 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         points.push((xt, borders.top - 1));
         points.push((xb, borders.bottom));
         points.push((borders.right - 1, yr));
+        println!("Caso 3");
     }
 
     // create a array of points localized at the edges of the screen
@@ -601,7 +605,7 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
 
     //check if 2 points are inside the screen, if not, then return none
     if line_points.len() > 0 {
-        println!("line points: {:?}", line_points);
+        //println!("line points: {:?}", line_points);
         let mut new_p0: Point = line_points[0];
         let mut new_p1: Point = line_points[1];
 
@@ -609,23 +613,32 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         if code_p0 == 0 {
             //this point is inside the screen
             new_p0 = *p0;
+            new_p1 = *p0;
+            println!("Entrei code_p0 = 0");
             for point in line_points.iter() {
                 if is_inside_segment(p0, p1, point) {
+                    println!("code_p0: {:?}, code_p1: {:?}, p0: {:?}, p1: {:?}, point{:?}", code_p0, code_p1, p0, p1, point);
                     new_p1 = *point;
                     break;
+                    
                 }
             }
         } else if code_p1 == 0 {
             //this point is inside the screen
+            println!("Entrei code_p1 = 0");
+            new_p0 = *p0;
             new_p1 = *p1;
             for point in line_points.iter() {
                 if is_inside_segment(p0, p1, point) {
+                    println!("code_p0: {:?}, code_p1: {:?}, p0: {:?}, p1: {:?}, point{:?}", code_p0, code_p1, p0, p1, point);
                     new_p0 = *point;
                     break;
                 }
             }
         }
+        println!("FIM: p0: {:?}, p1: {:?}", new_p0, new_p1);
         new_line = (new_p0, new_p1);
+        
         Some(new_line)
     } else {
         None
@@ -636,11 +649,14 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
     let mut new_image: Image = image.clone();
     //find the points of the borders of the screen
 
+    let (xl, xr) = (boundary.0.0.min(boundary.1.0), boundary.0.0.max(boundary.1.0));
+    let (yt, yb) = (boundary.0.1.max(boundary.1.1), boundary.0.1.min(boundary.1.1));
+    /* 
     let yt = boundary.0 .0;
     let yb = boundary.1 .0;
     let xr = boundary.1 .1;
     let xl = boundary.0 .1;
-
+    */
     let borders = Border {
         top: yt,
         bottom: yb,
@@ -654,6 +670,7 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
 
     //check if the line is entirely inside screen, if not clip it
     if code_p0 == 0 && code_p1 == 0 {
+        println!("Pontos totalmente dentro");
         new_image = draw_line_bresenham(new_image, p0, p1, color);
     } else {
         if (code_p0 & code_p1) == 0 {
@@ -662,6 +679,8 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
                 let (new_p0, new_p1) = clipped_line.unwrap();
                 new_image = draw_line_bresenham(new_image, new_p0, new_p1, color);
             }
+        }else{
+            println!("Pontos totalmente fora");
         }
     }
     new_image
