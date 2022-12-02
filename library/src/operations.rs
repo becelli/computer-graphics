@@ -251,7 +251,7 @@ fn homogeneous_point_to_point(h_point: HomogeneousPoint) -> Point {
     } else {
         normalized_h_point = h_point;
     }
-    //println!("normalized_h_point: {:?}", p0, p1);
+
     let point: Point = (normalized_h_point.0 as i32, normalized_h_point.1 as i32);
     point
 }
@@ -423,11 +423,11 @@ fn project_to_2d(image: Image, edges: &Vec<HomogeneousEdge>) -> Image {
         let mut p0 = homogeneous_point_to_point(edge.0);
         let mut p1 = homogeneous_point_to_point(edge.1);
         println!("p0: {:?}, p1: {:?}", p0, p1);
-        p0.0 = y_max - p0.0;
-        p1.0 = y_max - p1.0;
+        p0.1 = y_max - p0.1;
+        p1.1 = y_max - p1.1;
         let color = [0, 0, 0, 255];
         println!("p0: {:?}, p1: {:?}", p0, p1);
-        let boundary = ((0, 0), (image.len() as i32, image[0].len() as i32));
+        let boundary = ((image.len() as i32, 0), (0, image[0].len() as i32));
         //println!("boundary: {:?}", boundary);
         new_image = cohen_sutherland(new_image, p0, p1, color, boundary);
     }

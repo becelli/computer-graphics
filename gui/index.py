@@ -1,4 +1,6 @@
 import numpy as np
+
+
 from random import randint as rdint
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QMenu, QColorDialog, QWidget, QSizePolicy
 from PyQt5.QtGui import QPixmap, QImage, QFont, QGuiApplication, QMouseEvent, QIcon, QPainter, QPen, QBrush, QColor
@@ -16,6 +18,7 @@ class Application(QMainWindow):
     def __init__(self):
         super().__init__()
         self.canvas: QLabel = None
+        self.backup_pixmap: QPixmap = None
         self.operation: int = OPCODE.NONE
         self.buttons: list[QPushButton] = []
         self.current_color_widget: QLabel = None
@@ -134,7 +137,7 @@ class Application(QMainWindow):
             lambda: self.select_button(project_to_2d_button, OPCODE.PROJECT_TO_2D))
         self.buttons.append(project_to_2d_button)
         toolbar.addWidget(project_to_2d_button)
-        
+
         self.select_button(none_button, OPCODE.NONE)
 
     def display_system_color_selector(self):
@@ -159,17 +162,18 @@ class Application(QMainWindow):
 
         if self.operation in TWO_POINTS_OPERATIONS:
             if len(self.points) == 0:
-                self.canvas.setPixmap(self.backup_canvas)
+                self.canvas.setPixmap(self.backup_pixmap)
 
             if len(self.points) < 2:
                 point = Point(event.x(), event.y())
                 self.points.append(point)
-                if len(self.points) == 1:
-                    self.backup_pixmap = self.canvas.pixmap()
+                # if len(self.points) == 1:
+                # self.backup_pixmap = QPixmap(self.canvas.pixmap())
                 if len(self.points) == 2:
-                    self.canvas.setPixmap(self.backup_image)
+                    self.canvas.setPixmap(self.backup_pixmap)
                     self.CGLIB.apply(
                         self.operation, points=self.points, color=self.primary_color)
+                    self.backup_pixmap = QPixmap(self.canvas.pixmap())
                     self.points = []
             return
 
@@ -178,9 +182,9 @@ class Application(QMainWindow):
                 point = Point(event.x(), event.y())
                 self.points.append(point)
                 if len(self.points) == 1:
-                    self.backup_image = self.canvas.pixmap().toImage()
+                    self.backup_pixmap = QPixmap(self.canvas.pixmap())
                 if len(self.points) == 3:
-                    self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                    self.canvas.setPixmap(self.backup_pixmap)
                     self.CGLIB.apply(
                         self.operation, points=self.points, color=self.primary_color)
                     self.points = []
@@ -203,7 +207,7 @@ class Application(QMainWindow):
             return
         if self.operation == OPCODE.DRAW_LINE or self.operation == OPCODE.DRAW_LINE_BRESENHAM:
             if len(self.points) == 1:
-                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                self.canvas.setPixmap(self.backup_pixmap)
                 pen = QPen()
                 pen.setWidth(1)
                 pen.setColor(self.primary_color)
@@ -217,7 +221,7 @@ class Application(QMainWindow):
 
         if self.operation == OPCODE.DRAW_CIRCLE or self.operation == OPCODE.DRAW_CIRCLE_BRESENHAM or OPCODE.DRAW_CIRCLE_PARAMETRIC == self.operation:
             if len(self.points) == 1:
-                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                self.canvas.setPixmap(self.backup_pixmap)
                 pen = QPen()
                 pen.setWidth(1)
                 pen.setColor(self.primary_color)
@@ -235,7 +239,7 @@ class Application(QMainWindow):
 
         if self.operation == OPCODE.DRAW_TRIANGLE:
             if len(self.points) == 1:
-                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                self.canvas.setPixmap(self.backup_pixmap)
                 pen = QPen()
                 pen.setWidth(1)
                 pen.setColor(self.primary_color)
@@ -246,7 +250,7 @@ class Application(QMainWindow):
                 painter.end()
                 self.canvas.repaint()
             if len(self.points) == 2:
-                self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
+                self.canvas.setPixmap(self.backup_pixmap)
                 pen = QPen()
                 pen.setWidth(1)
                 pen.setColor(self.primary_color)
@@ -264,28 +268,6 @@ class Application(QMainWindow):
 
         self.display_current_pixel_info(event)
 
-    def mouse_release_event(self, event: QMouseEvent):
-        if self.operation == OPCODE.NONE:
-            return
-
-        # if self.operation == OPCODE.SELECTION_AREA:
-        #     # draw a dashed square over the canvas. It should not be saved in the canvas
-        #     if len(self.points) < 2:
-        #         self.canvas.setPixmap(QPixmap.fromImage(self.backup_image))
-        #         pen = QPen()
-        #         pen.setWidth(1)
-        #         pen.setColor(QColor(0, 0, 0))
-        #         pen.setStyle(Qt.DashLine)
-        #         painter = QPainter(self.canvas.pixmap())
-        #         painter.setPen(pen)
-        #         painter.drawRect(self.selection_points[0].x, self.selection_points[0].y,
-        #                          event.x() - self.selection_points[0].x, event.y() - self.selection_points[0].y)
-        #         painter.end()
-        #         self.canvas.repaint()
-        #         self.points = []
-        #         self.selection_points = []
-        #     return
-
     def select_button(self, button: QPushButton, opcode: int):
         for b in self.buttons:
             b.setDown(False)
@@ -298,8 +280,8 @@ class Application(QMainWindow):
 
         self.canvas = qto.create_canvas()
         grid.addWidget(self.canvas, 1, 0)
-        self.backup_image = self.canvas.pixmap().toImage()
         self.CGLIB = CG(self.canvas)
+        self.backup_pixmap = QPixmap(self.canvas.pixmap())
 
         self.current_color_widget = QLabel()
         self.current_color_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)

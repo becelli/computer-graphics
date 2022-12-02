@@ -107,7 +107,6 @@ class Operations:
         image_result, edges_result = cglib.scale_object(
             image, edges=edges, scale=scale)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
-        new_image[50:150, 50:150] = 128
         self.img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return self.img
 
