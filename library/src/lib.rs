@@ -3,7 +3,7 @@ use pyo3::wrap_pyfunction;
 
 mod common;
 mod operations;
-use common::{Image, Point, Rgba, Edge, HomogeneousEdge};
+use common::{Edge, HomogeneousEdge, Image, Point, Rgba};
 
 // #[pyfunction]
 // fn draw_line(image: Image) -> PyResult<Image> {
@@ -50,13 +50,54 @@ fn select_area(image: Image, p0: Point, p1: Point) -> PyResult<Image> {
 }
 
 #[pyfunction]
-fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundary: Edge) -> PyResult<Image> {
-    Ok(operations::cohen_sutherland(image, p0, p1,color, boundary))
+fn cohen_sutherland(
+    image: Image,
+    p0: Point,
+    p1: Point,
+    color: Rgba,
+    boundary: Edge,
+) -> PyResult<Image> {
+    Ok(operations::cohen_sutherland(image, p0, p1, color, boundary))
 }
 
 #[pyfunction]
-fn project_to_2d(image: Image, edges: Vec<HomogeneousEdge>, matrix: [[f32;4];4], scale:[f32;4], rotation_degrees: f32, rotation_axis: char, rotate_around_center: bool)-> PyResult<Image> {
-    Ok(operations::project_to_2d(image, edges, matrix, scale, rotation_degrees, rotation_axis, rotate_around_center))
+fn translate_object(
+    image: Image,
+    edges: Vec<HomogeneousEdge>,
+    axis: (f32, f32, f32),
+) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
+    Ok(operations::translate_object(image, edges, axis))
+}
+
+#[pyfunction]
+fn scale_object(
+    image: Image,
+    edges: Vec<HomogeneousEdge>,
+    scale: [f32; 4],
+) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
+    Ok(operations::scale_object(image, edges, scale))
+}
+
+#[pyfunction]
+fn shear_object(
+    image: Image,
+    edges: Vec<HomogeneousEdge>,
+    matrix: [[f32; 4]; 4],
+) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
+    Ok(operations::shear_object(image, edges, matrix))
+}
+
+#[pyfunction]
+fn rotate_object(
+    image: Image,
+    edges: Vec<HomogeneousEdge>,
+    degrees: f32,
+    axis: char,
+    center: bool,
+) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
+    Ok(operations::rotate_object(
+        image, edges, degrees, axis, center,
+    ))
 }
 
 #[pymodule]
@@ -70,6 +111,9 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(flood_fill, m)?)?;
     m.add_function(wrap_pyfunction!(select_area, m)?)?;
     m.add_function(wrap_pyfunction!(cohen_sutherland, m)?)?;
-    m.add_function(wrap_pyfunction!(project_to_2d, m)?)?;
+    m.add_function(wrap_pyfunction!(translate_object, m)?)?;
+    m.add_function(wrap_pyfunction!(scale_object, m)?)?;
+    m.add_function(wrap_pyfunction!(shear_object, m)?)?;
+    m.add_function(wrap_pyfunction!(rotate_object, m)?)?;
     Ok(())
 }
