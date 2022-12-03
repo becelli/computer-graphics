@@ -90,50 +90,50 @@ class Operations:
         return self.default_filter(cglib.flood_fill, p0=p0, color=color)
 
     @staticmethod
-    def shear(image: QImage, edges: list, matrix: np.ndarray) -> tuple[QImage, list]:
+    def shear(image: QImage, edges: list, o_edges: list, matrix: np.ndarray) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.shear_object(
-            image, edges=edges, matrix=matrix)
+            image, edges=edges, o_edges=o_edges, matrix=matrix)
 
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result
 
     @staticmethod
-    def rotate(image: QImage, edges: list, axis: str, angle: np.float32, aroundItself: bool) -> tuple[QImage, list]:
+    def rotate(image: QImage, edges: list, o_edges: list,  axis: str, angle: np.float32, aroundItself: bool) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.rotate_object(
-            image, edges=edges, degrees=angle, axis=axis, center=aroundItself)
+            image, edges=edges, o_edges=o_edges, degrees=angle, axis=axis, center=aroundItself)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result
 
     @staticmethod
-    def translate(image: QImage, edges: list, axis: np.ndarray) -> tuple[QImage, list]:
+    def translate(image: QImage, edges: list, o_edges: list, axis: np.ndarray) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.translate_object(
-            image, edges=edges, axis=axis)
+            image, edges=edges, o_edges=o_edges, axis=axis)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result
 
     @staticmethod
-    def scale(image: QImage, edges: list, scale: np.ndarray) -> tuple[QImage, list]:
+    def scale(image: QImage, edges: list, o_edges: list, scale: np.ndarray) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.scale_object(
-            image, edges=edges, scale=scale)
+            image, edges=edges, o_edges=o_edges, scale=scale)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result

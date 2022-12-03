@@ -1,14 +1,14 @@
 use crate::common::*;
 
 use ndarray::{arr1, arr2, ArrayBase, Dim, OwnedRepr};
-use std::{collections::VecDeque, f32::consts::PI};
+use std::{collections::VecDeque, f64::consts::PI};
 
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
     let delta_x: i32 = p1.0 - p0.0;
     let delta_y: i32 = p1.1 - p0.1;
     if delta_x.abs() > delta_y.abs() {
-        let m = delta_y as f32 / delta_x as f32;
+        let m = delta_y as f64 / delta_x as f64;
         let mut p0_x = p0.0;
         let p1_x = p1.0;
         let increment = if p1_x > p0_x { 1 } else { -1 };
@@ -16,19 +16,19 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
         while p0_x != p1_x {
             let new_point: Point = (
                 p0_x,
-                (p0.1 as f32 + (p0_x - p0.0) as f32 * m).floor() as i32,
+                (p0.1 as f64 + (p0_x - p0.0) as f64 * m).floor() as i32,
             );
             new_image[new_point.1 as usize][new_point.0 as usize] = color;
             p0_x += increment;
         }
     } else {
-        let m = delta_x as f32 / delta_y as f32;
+        let m = delta_x as f64 / delta_y as f64;
         let mut p0_y = p0.1;
         let p1_y = p1.1;
         let increment = if p1_y > p0_y { 1 } else { -1 };
         while p0_y != p1_y {
             let new_point: Point = (
-                (p0.0 as f32 + (p0_y - p0.1) as f32 * m).floor() as i32,
+                (p0.0 as f64 + (p0_y - p0.1) as f64 * m).floor() as i32,
                 p0_y,
             );
             new_image[new_point.1 as usize][new_point.0 as usize] = color;
@@ -92,7 +92,7 @@ fn calculate_radius(p0: Point, p1: Point) -> i32 {
     // radius for a circle from p0 to p1
     let delta_x = p1.0 - p0.0;
     let delta_y = p1.1 - p0.1;
-    let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f32).sqrt();
+    let radius = ((delta_x.pow(2) + delta_y.pow(2)) as f64).sqrt();
     radius as i32
 }
 
@@ -167,12 +167,12 @@ pub fn draw_circle_parametric(image: Image, p0: Point, p1: Point, color: Rgba) -
     let height = image.len() as i32;
     let width = image[0].len() as i32;
     let radius = calculate_radius(p0, p1);
-    let mut a: f32 = 0.0;
+    let mut a: f64 = 0.0;
     // step is proportional to the radius
-    let step = 1.0 / (radius).pow(2) as f32;
+    let step = 1.0 / (radius).pow(2) as f64;
     while a < 2.0 * PI {
-        let x = (radius as f32 * a.cos()) as i32;
-        let y = (radius as f32 * a.sin()) as i32;
+        let x = (radius as f64 * a.cos()) as i32;
+        let y = (radius as f64 * a.sin()) as i32;
         let new_point: Point = (p0.0 + x, p0.1 + y);
         if new_point.0 >= 0 && new_point.0 < width && new_point.1 >= 0 && new_point.1 < height {
             new_image[new_point.1 as usize][new_point.0 as usize] = color;
@@ -189,13 +189,13 @@ pub fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba)
     new_image
 }
 
-fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f32) -> bool {
-    let r1 = color1[0] as f32;
-    let g1 = color1[1] as f32;
-    let b1 = color1[2] as f32;
-    let r2 = color2[0] as f32;
-    let g2 = color2[1] as f32;
-    let b2 = color2[2] as f32;
+fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f64) -> bool {
+    let r1 = color1[0] as f64;
+    let g1 = color1[1] as f64;
+    let b1 = color1[2] as f64;
+    let r2 = color2[0] as f64;
+    let g2 = color2[1] as f64;
+    let b2 = color2[2] as f64;
     let delta_r = (r1 - r2).abs();
     let delta_g = (g1 - g2).abs();
     let delta_b = (b1 - b2).abs();
@@ -241,7 +241,7 @@ fn homogeneous_point_to_point(h_point: HomogeneousPoint) -> Point {
     // if h_point.3 is 0, then the point is at infinity
     // use safe float comparison
 
-    if (h_point.3 - 0.0).abs() < std::f32::EPSILON {
+    if (h_point.3 - 0.0).abs() < std::f64::EPSILON {
         normalized_h_point = (
             h_point.0 / h_point.3,
             h_point.1 / h_point.3,
@@ -257,9 +257,9 @@ fn homogeneous_point_to_point(h_point: HomogeneousPoint) -> Point {
 }
 
 //apply the rotation matrix to the matrix
-fn scale_matrix_3d(scale: [f32; 4]) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+fn scale_matrix_3d(scale: [f64; 4]) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
     // rustfmt-ignore
-    let s_matrix: [[f32; 4]; 4] = [
+    let s_matrix: [[f64; 4]; 4] = [
         [scale[0], 0., 0., 0.],
         [0., scale[1], 0., 0.],
         [0., 0., scale[2], 0.],
@@ -269,12 +269,12 @@ fn scale_matrix_3d(scale: [f32; 4]) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>
 }
 
 fn translation_matrix_3d(
-    x_translation: f32,
-    y_translation: f32,
-    z_translation: f32,
-) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+    x_translation: f64,
+    y_translation: f64,
+    z_translation: f64,
+) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
     // rustfmt-ignore
-    let matrix: [[f32; 4]; 4] = [
+    let matrix: [[f64; 4]; 4] = [
         [1., 0., 0., 0.],
         [0., 1., 0., 0.],
         [0., 0., 1., 0.],
@@ -286,9 +286,9 @@ fn translation_matrix_3d(
 
 fn calculate_center(edges: &Vec<HomogeneousEdge>) -> HomogeneousPoint {
     let center: HomogeneousPoint;
-    let mut center_x: f32 = 0.;
-    let mut center_y: f32 = 0.;
-    let mut center_z: f32 = 0.;
+    let mut center_x: f64 = 0.;
+    let mut center_y: f64 = 0.;
+    let mut center_z: f64 = 0.;
     for edge in edges.iter() {
         center_x += edge.0 .0;
         center_x += edge.1 .0;
@@ -298,9 +298,9 @@ fn calculate_center(edges: &Vec<HomogeneousEdge>) -> HomogeneousPoint {
         center_z += edge.1 .2;
     }
     center = (
-        center_x / (2. * edges.len() as f32),
-        center_y / (2. * edges.len() as f32),
-        center_z / (2. * edges.len() as f32),
+        center_x / (2. * edges.len() as f64),
+        center_y / (2. * edges.len() as f64),
+        center_z / (2. * edges.len() as f64),
         1.,
     );
     center
@@ -309,10 +309,10 @@ fn calculate_center(edges: &Vec<HomogeneousEdge>) -> HomogeneousPoint {
 //apply the rotation matrix to the matrix
 fn get_rotation_matrix_3d(
     edges: &Vec<HomogeneousEdge>,
-    rotation_degrees: f32,
+    rotation_degrees: f64,
     rotation_axis: char,
     rotate_around_center: bool,
-) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
     // rustfmt-ignore
     let mut matrix = [
         [0., 0., 0., 0.],
@@ -349,7 +349,7 @@ fn get_rotation_matrix_3d(
         }
     }
     //rotate around the center of the image
-    let final_matrix: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>;
+    let final_matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>;
     if rotate_around_center {
         let center: HomogeneousPoint = calculate_center(&edges);
         //translate the matrix to the center, the apply the rotation and then translate it back to the original position
@@ -365,7 +365,7 @@ fn get_rotation_matrix_3d(
 //apply the transformation matrix to the set of edges.
 fn apply_transformation(
     edges: &Vec<HomogeneousEdge>,
-    transformation_matrix: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    transformation_matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>,
 ) -> Vec<HomogeneousEdge> {
     let mut new_edges: Vec<HomogeneousEdge> = Vec::new();
 
@@ -375,10 +375,10 @@ fn apply_transformation(
 
         //apply the transformation for the first point in the edge
         let product = arr1(&[
-            point1.0 as f32,
-            point1.1 as f32,
-            point1.2 as f32,
-            point1.3 as f32,
+            point1.0 as f64,
+            point1.1 as f64,
+            point1.2 as f64,
+            point1.3 as f64,
         ])
         .dot(&transformation_matrix);
         let new_point1: HomogeneousPoint = (
@@ -390,10 +390,10 @@ fn apply_transformation(
 
         //apply the transformation for the second point in the edge
         let product = arr1(&[
-            point2.0 as f32,
-            point2.1 as f32,
-            point2.2 as f32,
-            point2.3 as f32,
+            point2.0 as f64,
+            point2.1 as f64,
+            point2.2 as f64,
+            point2.3 as f64,
         ])
         .dot(&transformation_matrix);
         let new_point2: HomogeneousPoint = (
@@ -414,12 +414,12 @@ fn apply_transformation(
 fn project_to_2d(
     image: Image,
     new_edges: &Vec<HomogeneousEdge>,
-    old_edges: &Vec<HomogeneousEdge>,
+    original_edges: &Vec<HomogeneousEdge>,
 ) -> Image {
     let mut new_image: Image = image.clone();
 
     // calculate the center of the old edges
-    let center: HomogeneousPoint = calculate_center(&old_edges);
+    let center: HomogeneousPoint = calculate_center(&original_edges);
 
     //invert the y axis
     let y_max = image.len() as i32 - 1;
@@ -429,10 +429,17 @@ fn project_to_2d(
     for edge in new_edges.iter() {
         let mut p0 = homogeneous_point_to_point(edge.0);
         let mut p1 = homogeneous_point_to_point(edge.1);
+        
         p0.0 = x_max / 2 + p0.0 - center.0 as i32;
         p1.0 = x_max / 2 + p1.0 - center.0 as i32;
         p0.1 = y_max / 2 - p0.1 + center.1 as i32;
         p1.1 = y_max / 2 - p1.1 + center.1 as i32;
+        /*
+        p0.0 = x_max / 2 + p0.0;
+        p1.0 = x_max / 2 + p1.0;
+        p0.1 = y_max / 2 - p0.1;
+        p1.1 = y_max / 2 - p1.1;
+        */
         let color = [0, 0, 0, 255];
 
         let boundary = ((0, 0), (image[0].len() as i32, image.len() as i32));
@@ -443,11 +450,14 @@ fn project_to_2d(
     new_image
 }
 
+
+
 //rotate an object
 pub fn rotate_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    degrees: f32,
+    o_edges: Vec<HomogeneousEdge>,
+    degrees: f64,
     axis: char,
     center: bool,
 ) -> (Image, Vec<HomogeneousEdge>) {
@@ -458,7 +468,7 @@ pub fn rotate_object(
 
     // let new_edges_clone = new_edges.clone();
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges, &edges);
+    let new_image = project_to_2d(image, &new_edges, &o_edges);
 
     (new_image, new_edges)
 }
@@ -467,14 +477,15 @@ pub fn rotate_object(
 pub fn shear_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    matrix: [[f32; 4]; 4],
+    o_edges: Vec<HomogeneousEdge>,
+    matrix: [[f64; 4]; 4],
 ) -> (Image, Vec<HomogeneousEdge>) {
     let transformation_matrix = arr2(&matrix);
 
     //applying the transformation for each point in edge
     let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges, &edges);
+    let new_image = project_to_2d(image, &new_edges, &o_edges);
     (new_image, new_edges)
 }
 
@@ -482,14 +493,15 @@ pub fn shear_object(
 pub fn scale_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    scale: [f32; 4],
+    o_edges: Vec<HomogeneousEdge>,
+    scale: [f64; 4],
 ) -> (Image, Vec<HomogeneousEdge>) {
     let transformation_matrix = scale_matrix_3d(scale);
 
     //applying the transformation for each point in edge
     let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges, &edges);
+    let new_image = project_to_2d(image, &new_edges, &o_edges);
 
     (new_image, new_edges)
 }
@@ -498,14 +510,15 @@ pub fn scale_object(
 pub fn translate_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    axis: [f32; 3],
+    o_edges: Vec<HomogeneousEdge>,
+    axis: [f64; 3],
 ) -> (Image, Vec<HomogeneousEdge>) {
     let transformation_matrix = translation_matrix_3d(axis[0], axis[1], axis[2]);
 
     //applying the transformation for each point in edge
     let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges, &edges);
+    let new_image = project_to_2d(image, &new_edges, &o_edges);
     (new_image, new_edges)
 }
 
@@ -579,11 +592,11 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         points.push((xb, yl));
         points.push((xt, yr));
     } else {
-        let m: f32 = delta_y as f32 / delta_x as f32;
-        xt = ((1.0 / m) * (borders.top - p0.1) as f32 + p0.0 as f32).round() as i32;
-        xb = ((1.0 / m) * (borders.bottom - p0.1) as f32 + p0.0 as f32).round() as i32;
-        yr = (m * (borders.right - p0.0) as f32 + p0.1 as f32).round() as i32;
-        yl = (m * (borders.left - p0.0) as f32 + p0.1 as f32).round() as i32;
+        let m: f64 = delta_y as f64 / delta_x as f64;
+        xt = ((1.0 / m) * (borders.top - p0.1) as f64 + p0.0 as f64).round() as i32;
+        xb = ((1.0 / m) * (borders.bottom - p0.1) as f64 + p0.0 as f64).round() as i32;
+        yr = (m * (borders.right - p0.0) as f64 + p0.1 as f64).round() as i32;
+        yl = (m * (borders.left - p0.0) as f64 + p0.1 as f64).round() as i32;
         points.push((borders.left, yl));
         points.push((xt, borders.top - 1));
         points.push((xb, borders.bottom));

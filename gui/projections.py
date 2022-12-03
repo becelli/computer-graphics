@@ -22,17 +22,17 @@ class Projections(QChildWindow):
                                ]
         self.new_edges = self.original_edges.copy()
 
-        self.scales = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float32)
-        self.translations = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+        self.scales = np.array([1.0, 1.0, 1.0, 1.0], dtype=np.float64)
+        self.translations = np.array([0.0, 0.0, 0.0], dtype=np.float64)
         self.rotation_axis: str = "x"
-        self.rotation_angle: np.float32 = np.float32(0.0)
+        self.rotation_angle: np.float64 = np.float64(0.0)
         self.self_center: bool = False
         self.shear_matrix = np.array([
             [1.0, 2, 0.3, 0.0],
             [1.2, 1.0, 0.0, 0.0],
             [0.3, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0]
-        ], dtype=np.float32)
+        ], dtype=np.float64)
         self.canvas = QLabel()
         self.backup_pixmap: QPixmap = None
         # can start with negative values
@@ -60,7 +60,7 @@ class Projections(QChildWindow):
 
         # Shear takes a 4x4 matrix. We'll use the identity matrix for the reset
         img, edges = Operations.shear(
-            image_canvas, self.new_edges, identity_matrix)
+            image_canvas, self.new_edges, self.original_edges, identity_matrix)
 
         self.canvas.setPixmap(QPixmap.fromImage(img))
         self.new_edges = edges
@@ -80,26 +80,26 @@ class Projections(QChildWindow):
 
         if selected_radio == self.radios["SHEAR"]:
             img, edges = Operations.shear(
-                image_canvas, self.new_edges, self.shear_matrix)
+                image_canvas, self.new_edges, self.original_edges, self.shear_matrix)
         elif selected_radio == self.radios["ORIGIN_ROTATE"]:
             img, edges = Operations.rotate(
-                image_canvas, self.new_edges, self.rotation_axis, self.rotation_angle, False)
+                image_canvas, self.new_edges, self.original_edges, self.rotation_axis, self.rotation_angle, False)
         elif selected_radio == self.radios["CENTER_ROTATE"]:
             img, edges = Operations.rotate(
-                image_canvas, self.new_edges, self.rotation_axis, self.rotation_angle, True)
+                image_canvas, self.new_edges, self.original_edges, self.rotation_axis, self.rotation_angle, True)
         elif selected_radio == self.radios["LOCAL_SCALE"]:
             scale = self.scales.copy()
             scale[3] = 1.0
             img, edges = Operations.scale(
-                image_canvas, self.new_edges, scale)
+                image_canvas, self.new_edges, self.original_edges, scale)
         elif selected_radio == self.radios["GLOBAL_SCALE"]:
             scale = self.scales.copy()
             scale[0:3] = 1.0
             img, edges = Operations.scale(
-                image_canvas, self.new_edges, scale)
+                image_canvas, self.new_edges, self.original_edges, scale)
         elif selected_radio == self.radios["TRANSLATE"]:
             img, edges = Operations.translate(
-                image_canvas, self.new_edges, self.translations)
+                image_canvas, self.new_edges, self.original_edges, self.translations)
         else:
             return
 
@@ -111,16 +111,16 @@ class Projections(QChildWindow):
             radio.setChecked(False)
         self.radios[radio_name].setChecked(True)
 
-    def set_scale(self, axis: str, value: np.float32):
+    def set_scale(self, axis: str, value: np.float64):
         try:
-            value = np.float32(value)
+            value = np.float64(value)
             self.scales[["x", "y", "z", "w"].index(axis)] = value
         except ValueError:
             pass
 
-    def set_translation(self, axis: str, value: np.float32):
+    def set_translation(self, axis: str, value: np.float64):
         try:
-            value = np.float32(value)
+            value = np.float64(value)
             self.translations[["x", "y", "z"].index(axis)] = value
         except ValueError:
             pass
@@ -128,15 +128,15 @@ class Projections(QChildWindow):
     def set_rotation_axis(self, axis: str):
         self.rotation_axis = axis.lower()
 
-    def set_rotation_angle(self, angle: np.float32):
+    def set_rotation_angle(self, angle: np.float64):
         try:
-            self.rotation_angle = np.float32(angle)
+            self.rotation_angle = np.float64(angle)
         except ValueError:
             pass
 
-    def set_shear_matrix(self, row: int, col: int, value: np.float32):
+    def set_shear_matrix(self, row: int, col: int, value: np.float64):
         try:
-            self.shear_matrix[row, col] = np.float32(value)
+            self.shear_matrix[row, col] = np.float64(value)
         except ValueError:
             pass
 
