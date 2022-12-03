@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap, QImage, QColor, QFont
 from PyQt5.QtCore import Qt
+from gui.window.setup import center_window
 
 
 class QGrid(QGridLayout):
@@ -59,10 +60,11 @@ class QObjects:
 
 
 class QChildWindow(QMainWindow):
-    def __init__(self, parent: QMainWindow, title: str, width: int, height: int):
+    def __init__(self, parent: QMainWindow, title: str, width: int = None, height: int = None):
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.setFixedSize(width, height)
+        if width and height:
+            self.setFixedSize(width, height)
 
 
 class QDialogs(QWidget):
@@ -124,6 +126,8 @@ def put_image_on_canvas(canvas: QLabel, image: QImage) -> None:
 
 def display_int_input_dialog(
     title: str, low: int, high: int, default: int = None
+
+
 ) -> int:
     dialog = QInputDialog()
     dialog.setWindowTitle(title)
@@ -167,7 +171,7 @@ def display_float_input_dialog(
 
 
 def create_canvas(xscale: int = 0, yscale: int = 0):
-    canvas = QObjects.canvas(666, 444)
+    canvas = QObjects.canvas(500, 500)
     if xscale != 0 and yscale != 0:
         canvas.setScaledContents(True)
         canvas.setFixedSize(xscale, yscale)

@@ -64,7 +64,7 @@ fn cohen_sutherland(
 fn translate_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    axis: (f32, f32, f32),
+    axis: [f32; 3],
 ) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
     Ok(operations::translate_object(image, edges, axis))
 }

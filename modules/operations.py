@@ -16,8 +16,9 @@ class Operations:
     def set_img(self, img: QImage):
         self.img = img
 
-    def get_img_pixels(self, w, h):
-        bits = np.array(self.img.bits().asarray(w * h * 4))
+    @staticmethod
+    def get_img_pixels(image: QImage,  w, h):
+        bits = np.array(image.bits().asarray(w * h * 4))
         pixels = bits.reshape(h, w, 4)  # Use matrix to represent the image
         image = pixels[:, :, [2, 1, 0, 3]]  # BGR -> RGB
         return image
@@ -35,7 +36,7 @@ class Operations:
 
     def default_filter(self, filter_func: callable, **kwargs) -> QImage:
         w, h = self.img.width(), self.img.height()
-        image = self.get_img_pixels(w, h)
+        image = Operations.get_img_pixels(self.img, w, h)
 
         filtered = np.array(filter_func(image, **kwargs),
                             dtype=np.uint8).astype(np.uint8)
@@ -44,7 +45,7 @@ class Operations:
 
     def area_filter(self, function: callable, mask_side, **kwargs) -> QImage:
         w, h = self.img.width(), self.img.height()
-        image = self.get_img_pixels(w, h)
+        image = Operations.get_img_pixels(self.img, w, h)
         result = np.array(function(image, **kwargs),
                           dtype=np.uint8).astype(np.uint8)
         result = result.reshape(h, w, 4)
@@ -88,54 +89,54 @@ class Operations:
         color = self.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.flood_fill, p0=p0, color=color)
 
-    def project_to_2d(self):
-        edges = [((0, 0, 0, 1), (0, 100, 0, 1)), ((0, 0, 0, 1), (100, 0, 0, 1)), ((50, 150, 0, 1),
-                                                                                  (0, 100, 0, 1)), ((50, 150, 0, 1), (100, 100, 0, 1)), ((100, 100, 0, 1), (100, 0, 0, 1))]
-        matrix = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
-        scale = [1., 1., 1., 0.25]
-        rotation_degrees = 0
-        rotation_axis = 'z'
-        return self.default_filter(cglib.project_to_2d, edges=edges, matrix=matrix, scale=scale, rotation_degrees=rotation_degrees, rotation_axis=rotation_axis)
+    @staticmethod
+    def shear(image: QImage, edges: list, matrix: np.ndarray) -> tuple[QImage, list]:
+        w, h = image.width(), image.height()
 
-    def scale(self, **kwargs):
-        w, h = self.img.width(), self.img.height()
-        image = self.get_img_pixels(w, h)
-        edges = [((0, 0, 0, 1), (0, 100, 0, 1)), ((0, 0, 0, 1), (100, 0, 0, 1)), ((50, 150, 0, 1),
-                                                                                  (0, 100, 0, 1)), ((50, 150, 0, 1), (100, 100, 0, 1)), ((100, 100, 0, 1), (100, 0, 0, 1))]
-        scale = [1., 1., 1., 0.5]
+        image = Operations.get_img_pixels(image, w, h)
 
-        image_result, edges_result = cglib.scale_object(
-            image, edges=edges, scale=scale)
+        image_result, edges_result = cglib.shear_object(
+            image, edges=edges, matrix=matrix)
+
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
-        self.img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
-        return self.img
+        img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
+        return img, edges_result
 
-    def translate(self, **kwargs):
-        w, h = self.img.width(), self.img.height()
-        image = self.get_img_pixels(w, h)
-        edges = [((0, 0, 0, 1), (0, 100, 0, 1)), ((0, 0, 0, 1), (100, 0, 0, 1)), ((50, 150, 0, 1),
-                                                                                  (0, 100, 0, 1)), ((50, 150, 0, 1), (100, 100, 0, 1)), ((100, 100, 0, 1), (100, 0, 0, 1))]
-        axis = (0, 0, 1)
+    @staticmethod
+    def rotate(image: QImage, edges: list, axis: str, angle: np.float32, aroundItself: bool) -> tuple[QImage, list]:
+        w, h = image.width(), image.height()
+
+        image = Operations.get_img_pixels(image, w, h)
+
+        image_result, edges_result = cglib.rotate_object(
+            image, edges=edges, degrees=angle, axis=axis, center=aroundItself)
+        new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
+        img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
+        return img, edges_result
+
+    @staticmethod
+    def translate(image: QImage, edges: list, axis: np.ndarray) -> tuple[QImage, list]:
+        w, h = image.width(), image.height()
+
+        image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.translate_object(
             image, edges=edges, axis=axis)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
-        self.img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
-        return self.img
+        img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
+        return img, edges_result
 
-    def rotate(self, **kwargs):
-        w, h = self.img.width(), self.img.height()
-        image = self.get_img_pixels(w, h)
-        edges = [((100, 100, 0, 1), (100, 200, 0, 1)), ((100, 100, 0, 1), (200, 100, 0, 1)), ((150, 250, 0, 1),
-                                                                                  (100, 200, 0, 1)), ((150, 250, 0, 1), (200, 200, 0, 1)), ((200, 200, 0, 1), (200, 100, 0, 1))]
-        degrees = 10.0
-        axis = 'z'
+    @staticmethod
+    def scale(image: QImage, edges: list, scale: np.ndarray) -> tuple[QImage, list]:
+        w, h = image.width(), image.height()
 
-        image_result, edges_result = cglib.rotate_object(
-            image, edges=edges, degrees=degrees, axis=axis, center=False)
+        image = Operations.get_img_pixels(image, w, h)
+
+        image_result, edges_result = cglib.scale_object(
+            image, edges=edges, scale=scale)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
-        self.img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
-        return self.img
+        img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
+        return img, edges_result
 
 
 class CG():
@@ -152,7 +153,6 @@ class CG():
             OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
             OPCODE.DRAW_TRIANGLE: self.f.draw_triangle,
             OPCODE.FLOOD_FILL: self.f.flood_fill,
-            OPCODE.PROJECT_TO_2D: self.f.rotate,
         }
 
         if code in all_operations:

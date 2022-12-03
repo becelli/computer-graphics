@@ -353,7 +353,8 @@ fn get_rotation_matrix_3d(
     if rotate_around_center {
         let center: HomogeneousPoint = calculate_center(&edges);
         //translate the matrix to the center, the apply the rotation and then translate it back to the original position
-        let temp_matrix = translation_matrix_3d(-center.0, -center.1, -center.2).dot(&arr2(&matrix));
+        let temp_matrix =
+            translation_matrix_3d(-center.0, -center.1, -center.2).dot(&arr2(&matrix));
         final_matrix = temp_matrix.dot(&translation_matrix_3d(center.0, center.1, center.2));
     } else {
         final_matrix = arr2(&matrix);
@@ -363,7 +364,7 @@ fn get_rotation_matrix_3d(
 
 //apply the transformation matrix to the set of edges.
 fn apply_transformation(
-    edges: Vec<HomogeneousEdge>,
+    edges: &Vec<HomogeneousEdge>,
     transformation_matrix: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> Vec<HomogeneousEdge> {
     let mut new_edges: Vec<HomogeneousEdge> = Vec::new();
@@ -410,26 +411,32 @@ fn apply_transformation(
 }
 
 //project the a 3d set of points to a 2d image.
-fn project_to_2d(image: Image, edges: &Vec<HomogeneousEdge>) -> Image {
+fn project_to_2d(
+    image: Image,
+    new_edges: &Vec<HomogeneousEdge>,
+    old_edges: &Vec<HomogeneousEdge>,
+) -> Image {
     let mut new_image: Image = image.clone();
+
+    // calculate the center of the old edges
+    let center: HomogeneousPoint = calculate_center(&old_edges);
 
     //invert the y axis
     let y_max = image.len() as i32 - 1;
-
+    let x_max = image[0].len() as i32 - 1;
     // for each edge, print it
 
-    for edge in edges.iter() {
-        //println!("edge.0: {:?}, edge.1: {:?}", edge.0, edge.1);
+    for edge in new_edges.iter() {
         let mut p0 = homogeneous_point_to_point(edge.0);
         let mut p1 = homogeneous_point_to_point(edge.1);
-        //println!("p0: {:?}, p1: {:?}", p0, p1);
-        //println!("p0: {:?}, p1: {:?}, y_max{}", p0, p1, y_max);
-        p0.1 = y_max - p0.1;
-        p1.1 = y_max - p1.1;
+        p0.0 = x_max / 2 + p0.0 - center.0 as i32;
+        p1.0 = x_max / 2 + p1.0 - center.0 as i32;
+        p0.1 = y_max / 2 - p0.1 + center.1 as i32;
+        p1.1 = y_max / 2 - p1.1 + center.1 as i32;
         let color = [0, 0, 0, 255];
-        println!("Inicio: p0: {:?}, p1: {:?}", p0, p1);
+
         let boundary = ((0, 0), (image[0].len() as i32, image.len() as i32));
-        //println!("boundary: {:?}", boundary);
+
         new_image = cohen_sutherland(new_image, p0, p1, color, boundary);
     }
 
@@ -447,11 +454,11 @@ pub fn rotate_object(
     let transformation_matrix = get_rotation_matrix_3d(&edges, degrees, axis, center);
 
     //applying the transformation for each point in edge
-    let new_edges: Vec<HomogeneousEdge> = apply_transformation(edges, transformation_matrix);
+    let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
 
     // let new_edges_clone = new_edges.clone();
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges);
+    let new_image = project_to_2d(image, &new_edges, &edges);
 
     (new_image, new_edges)
 }
@@ -465,9 +472,9 @@ pub fn shear_object(
     let transformation_matrix = arr2(&matrix);
 
     //applying the transformation for each point in edge
-    let new_edges: Vec<HomogeneousEdge> = apply_transformation(edges, transformation_matrix);
+    let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges);
+    let new_image = project_to_2d(image, &new_edges, &edges);
     (new_image, new_edges)
 }
 
@@ -480,10 +487,10 @@ pub fn scale_object(
     let transformation_matrix = scale_matrix_3d(scale);
 
     //applying the transformation for each point in edge
-    let new_edges: Vec<HomogeneousEdge> = apply_transformation(edges, transformation_matrix);
+    let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges);
-    // println!("new edges: {:?}", new_edges);
+    let new_image = project_to_2d(image, &new_edges, &edges);
+
     (new_image, new_edges)
 }
 
@@ -491,14 +498,14 @@ pub fn scale_object(
 pub fn translate_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    axis: (f32, f32, f32),
+    axis: [f32; 3],
 ) -> (Image, Vec<HomogeneousEdge>) {
-    let transformation_matrix = translation_matrix_3d(axis.0, axis.1, axis.2);
+    let transformation_matrix = translation_matrix_3d(axis[0], axis[1], axis[2]);
 
     //applying the transformation for each point in edge
-    let new_edges: Vec<HomogeneousEdge> = apply_transformation(edges, transformation_matrix);
+    let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
     //drawing each edge of the drawing
-    let new_image = project_to_2d(image, &new_edges);
+    let new_image = project_to_2d(image, &new_edges, &edges);
     (new_image, new_edges)
 }
 
@@ -564,7 +571,6 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         yl = borders.bottom;
         points.push((xb, yl));
         points.push((xt, yr));
-        println!("Caso 1");
     } else if delta_y == 0 {
         xb = borders.left;
         xt = borders.right - 1;
@@ -572,7 +578,6 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         yl = p0.1;
         points.push((xb, yl));
         points.push((xt, yr));
-        println!("Caso 2");
     } else {
         let m: f32 = delta_y as f32 / delta_x as f32;
         xt = ((1.0 / m) * (borders.top - p0.1) as f32 + p0.0 as f32).round() as i32;
@@ -583,7 +588,6 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
         points.push((xt, borders.top - 1));
         points.push((xb, borders.bottom));
         points.push((borders.right - 1, yr));
-        println!("Caso 3");
     }
 
     // create a array of points localized at the edges of the screen
@@ -605,7 +609,6 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
 
     //check if 2 points are inside the screen, if not, then return none
     if line_points.len() > 0 {
-        //println!("line points: {:?}", line_points);
         let mut new_p0: Point = line_points[0];
         let mut new_p1: Point = line_points[1];
 
@@ -614,31 +617,25 @@ fn points_in_screen(p0: &Point, p1: &Point, borders: &Border) -> Option<Edge> {
             //this point is inside the screen
             new_p0 = *p0;
             new_p1 = *p0;
-            println!("Entrei code_p0 = 0");
             for point in line_points.iter() {
                 if is_inside_segment(p0, p1, point) {
-                    println!("code_p0: {:?}, code_p1: {:?}, p0: {:?}, p1: {:?}, point{:?}", code_p0, code_p1, p0, p1, point);
                     new_p1 = *point;
                     break;
-                    
                 }
             }
         } else if code_p1 == 0 {
             //this point is inside the screen
-            println!("Entrei code_p1 = 0");
             new_p0 = *p0;
             new_p1 = *p1;
             for point in line_points.iter() {
                 if is_inside_segment(p0, p1, point) {
-                    println!("code_p0: {:?}, code_p1: {:?}, p0: {:?}, p1: {:?}, point{:?}", code_p0, code_p1, p0, p1, point);
                     new_p0 = *point;
                     break;
                 }
             }
         }
-        println!("FIM: p0: {:?}, p1: {:?}", new_p0, new_p1);
         new_line = (new_p0, new_p1);
-        
+
         Some(new_line)
     } else {
         None
@@ -649,9 +646,15 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
     let mut new_image: Image = image.clone();
     //find the points of the borders of the screen
 
-    let (xl, xr) = (boundary.0.0.min(boundary.1.0), boundary.0.0.max(boundary.1.0));
-    let (yt, yb) = (boundary.0.1.max(boundary.1.1), boundary.0.1.min(boundary.1.1));
-    /* 
+    let (xl, xr) = (
+        boundary.0 .0.min(boundary.1 .0),
+        boundary.0 .0.max(boundary.1 .0),
+    );
+    let (yt, yb) = (
+        boundary.0 .1.max(boundary.1 .1),
+        boundary.0 .1.min(boundary.1 .1),
+    );
+    /*
     let yt = boundary.0 .0;
     let yb = boundary.1 .0;
     let xr = boundary.1 .1;
@@ -670,7 +673,6 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
 
     //check if the line is entirely inside screen, if not clip it
     if code_p0 == 0 && code_p1 == 0 {
-        println!("Pontos totalmente dentro");
         new_image = draw_line_bresenham(new_image, p0, p1, color);
     } else {
         if (code_p0 & code_p1) == 0 {
@@ -679,8 +681,6 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
                 let (new_p0, new_p1) = clipped_line.unwrap();
                 new_image = draw_line_bresenham(new_image, new_p0, new_p1, color);
             }
-        }else{
-            println!("Pontos totalmente fora");
         }
     }
     new_image
