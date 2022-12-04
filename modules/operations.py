@@ -57,11 +57,21 @@ class Operations:
     def draw_line(self, **kwargs):
         p0, p1 = kwargs['points']
         color = self.qcolor_to_rgb(kwargs['color'])
+
         return self.default_filter(cglib.draw_line, p0=p0, p1=p1, color=color)
 
     def draw_line_bresenham(self, **kwargs):
         p0, p1 = kwargs['points']
         color = self.qcolor_to_rgb(kwargs['color'])
+
+        selection_points = kwargs['selection_points']
+        if len(selection_points) == 2:
+            p_0, p_1 = selection_points
+            p_0_, p_1_ = (p_0.x, p_0.y), (p_1.x, p_1.y)
+            boundary = (p_0_, p_1_)
+
+            return self.default_filter(cglib.cohen_sutherland, p0=p0, p1=p1, color=color, boundary=boundary)
+
         return self.default_filter(cglib.draw_line_bresenham, p0=p0, p1=p1, color=color)
 
     def draw_circle(self, **kwargs):
@@ -90,50 +100,50 @@ class Operations:
         return self.default_filter(cglib.flood_fill, p0=p0, color=color)
 
     @staticmethod
-    def shear(image: QImage, edges: list, o_edges: list, matrix: np.ndarray) -> tuple[QImage, list]:
+    def shear(image: QImage, edges: list, matrix: np.ndarray) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.shear_object(
-            image, edges=edges, o_edges=o_edges, matrix=matrix)
+            image, edges=edges,  matrix=matrix)
 
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result
 
     @staticmethod
-    def rotate(image: QImage, edges: list, o_edges: list,  axis: str, angle: np.float32, aroundItself: bool) -> tuple[QImage, list]:
+    def rotate(image: QImage, edges: list,  axis: str, angle: np.float64, aroundItself: bool) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.rotate_object(
-            image, edges=edges, o_edges=o_edges, degrees=angle, axis=axis, center=aroundItself)
+            image, edges=edges,  degrees=angle, axis=axis, center=aroundItself)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result
 
     @staticmethod
-    def translate(image: QImage, edges: list, o_edges: list, axis: np.ndarray) -> tuple[QImage, list]:
+    def translate(image: QImage, edges: list, axis: np.ndarray) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.translate_object(
-            image, edges=edges, o_edges=o_edges, axis=axis)
+            image, edges=edges,  axis=axis)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result
 
     @staticmethod
-    def scale(image: QImage, edges: list, o_edges: list, scale: np.ndarray) -> tuple[QImage, list]:
+    def scale(image: QImage, edges: list, scale: np.ndarray) -> tuple[QImage, list]:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result, edges_result = cglib.scale_object(
-            image, edges=edges, o_edges=o_edges, scale=scale)
+            image, edges=edges,  scale=scale)
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result

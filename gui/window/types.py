@@ -11,7 +11,7 @@ class OPCODE:
     DRAW_TRIANGLE = 6
     FLOOD_FILL = 7
     SELECTION_AREA = 8
-    PROJECT_TO_2D = 9
+
 
 @dataclass
 class Point(tuple):

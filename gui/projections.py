@@ -60,7 +60,7 @@ class Projections(QChildWindow):
 
         # Shear takes a 4x4 matrix. We'll use the identity matrix for the reset
         img, edges = Operations.shear(
-            image_canvas, self.new_edges, self.original_edges, identity_matrix)
+            image_canvas, self.new_edges, identity_matrix)
 
         self.canvas.setPixmap(QPixmap.fromImage(img))
         self.new_edges = edges
@@ -80,26 +80,26 @@ class Projections(QChildWindow):
 
         if selected_radio == self.radios["SHEAR"]:
             img, edges = Operations.shear(
-                image_canvas, self.new_edges, self.original_edges, self.shear_matrix)
+                image_canvas, self.new_edges, self.shear_matrix)
         elif selected_radio == self.radios["ORIGIN_ROTATE"]:
             img, edges = Operations.rotate(
-                image_canvas, self.new_edges, self.original_edges, self.rotation_axis, self.rotation_angle, False)
+                image_canvas, self.new_edges, self.rotation_axis, self.rotation_angle, False)
         elif selected_radio == self.radios["CENTER_ROTATE"]:
             img, edges = Operations.rotate(
-                image_canvas, self.new_edges, self.original_edges, self.rotation_axis, self.rotation_angle, True)
+                image_canvas, self.new_edges, self.rotation_axis, self.rotation_angle, True)
         elif selected_radio == self.radios["LOCAL_SCALE"]:
             scale = self.scales.copy()
             scale[3] = 1.0
             img, edges = Operations.scale(
-                image_canvas, self.new_edges, self.original_edges, scale)
+                image_canvas, self.new_edges, scale)
         elif selected_radio == self.radios["GLOBAL_SCALE"]:
             scale = self.scales.copy()
             scale[0:3] = 1.0
             img, edges = Operations.scale(
-                image_canvas, self.new_edges, self.original_edges, scale)
+                image_canvas, self.new_edges, scale)
         elif selected_radio == self.radios["TRANSLATE"]:
             img, edges = Operations.translate(
-                image_canvas, self.new_edges, self.original_edges, self.translations)
+                image_canvas, self.new_edges, self.translations)
         else:
             return
 
@@ -147,7 +147,7 @@ class Projections(QChildWindow):
         grid.setSpacing(10)
 
         # Canvas on left, controls on right
-        w, h = 500, 500
+        w, h = 720, 720
         self.canvas = qto.create_canvas(w, h)
         self.backup_pixmap = QPixmap(self.canvas.pixmap())
         self.reset()

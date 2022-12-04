@@ -64,43 +64,39 @@ fn cohen_sutherland(
 fn translate_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    o_edges: Vec<HomogeneousEdge>,
     axis: [f64; 3],
 ) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
-    Ok(operations::translate_object(image, edges, o_edges, axis))
+    Ok(operations::translate_object(image, edges, axis))
 }
 
 #[pyfunction]
 fn scale_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    o_edges: Vec<HomogeneousEdge>,
     scale: [f64; 4],
 ) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
-    Ok(operations::scale_object(image, edges, o_edges, scale))
+    Ok(operations::scale_object(image, edges, scale))
 }
 
 #[pyfunction]
 fn shear_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    o_edges: Vec<HomogeneousEdge>,
     matrix: [[f64; 4]; 4],
 ) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
-    Ok(operations::shear_object(image, edges, o_edges, matrix))
+    Ok(operations::shear_object(image, edges, matrix))
 }
 
 #[pyfunction]
 fn rotate_object(
     image: Image,
     edges: Vec<HomogeneousEdge>,
-    o_edges: Vec<HomogeneousEdge>,
     degrees: f64,
     axis: char,
     center: bool,
 ) -> PyResult<(Image, Vec<HomogeneousEdge>)> {
     Ok(operations::rotate_object(
-        image, edges, o_edges, degrees, axis, center,
+        image, edges, degrees, axis, center,
     ))
 }
 

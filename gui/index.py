@@ -13,6 +13,8 @@ from gui.window.types import OPCODE, Point
 TWO_POINTS_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_CIRCLE,
                          OPCODE.DRAW_LINE_BRESENHAM, OPCODE.DRAW_CIRCLE_BRESENHAM, OPCODE.DRAW_CIRCLE_PARAMETRIC]
 
+LINE_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_LINE_BRESENHAM]
+
 
 class Application(QMainWindow):
     def __init__(self):
@@ -130,14 +132,6 @@ class Application(QMainWindow):
         self.buttons.append(selection_area_button)
         toolbar.addWidget(selection_area_button)
 
-        project_to_2d_button = QPushButton()
-        project_to_2d_button.setIcon(QIcon("icons/circle-full.svg"))
-        project_to_2d_button.setToolTip("Project to 2d")
-        project_to_2d_button.clicked.connect(
-            lambda: self.select_button(project_to_2d_button, OPCODE.PROJECT_TO_2D))
-        self.buttons.append(project_to_2d_button)
-        toolbar.addWidget(project_to_2d_button)
-
         self.select_button(none_button, OPCODE.NONE)
 
     def display_system_color_selector(self):
@@ -151,11 +145,12 @@ class Application(QMainWindow):
 
     def listen_to_mouse_events(self):
         self.canvas.setMouseTracking(True)
-        self.canvas.mousePressEvent = self.mouse_click_event
+        self.canvas.mouseReleaseEvent = self.mouse_release_event
+        self.canvas.mousePressEvent = self.mouse_press_event
         self.canvas.mouseMoveEvent = self.mouse_move_event
-        # self.canvas.mouseReleaseEvent = self.mouse_release_event
 
-    def mouse_click_event(self, event: QMouseEvent):
+    def mouse_press_event(self, event: QMouseEvent):
+
         if self.operation == OPCODE.NONE:
             self.points = []
             return
@@ -167,14 +162,14 @@ class Application(QMainWindow):
             if len(self.points) < 2:
                 point = Point(event.x(), event.y())
                 self.points.append(point)
-                # if len(self.points) == 1:
-                # self.backup_pixmap = QPixmap(self.canvas.pixmap())
+
                 if len(self.points) == 2:
                     self.canvas.setPixmap(self.backup_pixmap)
                     self.CGLIB.apply(
-                        self.operation, points=self.points, color=self.primary_color)
+                        self.operation, points=self.points, color=self.primary_color, selection_points=self.selection_points)
                     self.backup_pixmap = QPixmap(self.canvas.pixmap())
                     self.points = []
+
             return
 
         if self.operation == OPCODE.DRAW_TRIANGLE:
@@ -187,6 +182,7 @@ class Application(QMainWindow):
                     self.canvas.setPixmap(self.backup_pixmap)
                     self.CGLIB.apply(
                         self.operation, points=self.points, color=self.primary_color)
+                    self.backup_pixmap = QPixmap(self.canvas.pixmap())
                     self.points = []
             return
 
@@ -194,15 +190,57 @@ class Application(QMainWindow):
             point = Point(event.x(), event.y())
             self.CGLIB.apply(
                 self.operation, point=point, color=self.primary_color)
+            self.backup_pixmap = QPixmap(self.canvas.pixmap())
             return
 
-        if self.operation == OPCODE.PROJECT_TO_2D:
-            self.CGLIB.apply(
-                self.operation)
-            return
+        if self.operation == OPCODE.SELECTION_AREA:
+            if len(self.selection_points) == 0:
+                point = Point(event.x(), event.y())
+                self.selection_points.append(point)
+                self.backup_pixmap = QPixmap(self.canvas.pixmap())
+
+    def mouse_release_event(self, event: QMouseEvent):
+        if self.operation == OPCODE.SELECTION_AREA:
+            if len(self.selection_points) == 1:
+                point = Point(event.x(), event.y())
+                self.selection_points.append(point)
+                self.canvas.setPixmap(self.backup_pixmap)
+
+                # Reset the selection points if the user only clicked once
+                x_ini, y_ini = self.selection_points[0].x, self.selection_points[0].y
+                x_end, y_end = self.selection_points[1].x, self.selection_points[1].y
+                if x_ini == x_end or y_ini == y_end:
+                    self.selection_points = []
+                    return
+
+                # Draw the selection area
+                pen = QPen(self.primary_color)
+                pen.setWidth(1)
+                painter = QPainter(self.canvas.pixmap())
+                painter.setPen(pen)
+                painter.drawRect(
+                    self.selection_points[0].x, self.selection_points[0].y, self.selection_points[1].x - self.selection_points[0].x, self.selection_points[1].y - self.selection_points[0].y)
+                painter.end()
+                self.canvas.repaint()
+                self.backup_pixmap = QPixmap(self.canvas.pixmap())
+
+                self.select_button(self.buttons[0], OPCODE.NONE)
 
     def mouse_move_event(self, event: QMouseEvent):
         self.display_current_pixel_info(event)
+
+        if self.operation == OPCODE.SELECTION_AREA:
+            if len(self.selection_points) == 1:
+                self.canvas.setPixmap(self.backup_pixmap)
+                pen = QPen()
+                pen.setColor(self.primary_color)
+                painter = QPainter(self.canvas.pixmap())
+                painter.setPen(pen)
+                painter.drawRect(
+                    self.selection_points[0].x, self.selection_points[0].y, event.x() - self.selection_points[0].x, event.y() - self.selection_points[0].y)
+                painter.end()
+                self.canvas.repaint()
+
         if self.operation == OPCODE.NONE:
             return
         if self.operation == OPCODE.DRAW_LINE or self.operation == OPCODE.DRAW_LINE_BRESENHAM:
@@ -273,7 +311,11 @@ class Application(QMainWindow):
             b.setDown(False)
         button.setDown(True)
         self.set_operation(opcode)
+
         self.points = []
+
+        if opcode == OPCODE.SELECTION_AREA:
+            self.selection_points = []
 
     def display_main_content(self):
         grid = qto.QGrid()
