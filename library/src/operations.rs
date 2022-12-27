@@ -190,12 +190,12 @@ pub fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba)
 }
 
 fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f64) -> bool {
-    let r1 = color1[0] as f64;
-    let g1 = color1[1] as f64;
-    let b1 = color1[2] as f64;
-    let r2 = color2[0] as f64;
-    let g2 = color2[1] as f64;
-    let b2 = color2[2] as f64;
+    let r1 = f64::from(color1[0]);
+    let g1 = f64::from(color1[1]);
+    let b1 = f64::from(color1[2]);
+    let r2 = f64::from(color2[0]);
+    let g2 = f64::from(color2[1]);
+    let b2 = f64::from(color2[2]);
     let delta_r = (r1 - r2).abs();
     let delta_g = (g1 - g2).abs();
     let delta_b = (b1 - b2).abs();
@@ -246,16 +246,16 @@ pub fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> Image {
     let tolerance = 0.05;
 
     let old_color = new_image[p0.1 as usize][p0.0 as usize];
-    let mut queue: VecDeque<Point> = VecDeque::new();
+    let mut queue: Vec<Point> = Vec::new();
 
     let get_neighbors = match n4 {
         true => get_neighbors_4,
         false => get_neighbors_8,
     };
 
-    queue.push_back(p0);
+    queue.push(p0);
     while queue.len() > 0 {
-        let point = queue.pop_back().unwrap();
+        let point = queue.pop().unwrap();
         let (x, y) = point;
 
         if new_image[y as usize][x as usize] == color {
@@ -276,7 +276,7 @@ pub fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> Image {
                 if !neighbor_color.eq(&color)
                     && is_similar_color(neighbor_color, old_color, tolerance)
                 {
-                    queue.push_back(neighbor);
+                    queue.push(neighbor);
                 }
             }
         }

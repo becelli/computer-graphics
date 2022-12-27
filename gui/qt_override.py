@@ -171,7 +171,7 @@ def display_float_input_dialog(
 
 
 def create_canvas(xscale: int = 0, yscale: int = 0):
-    canvas = QObjects.canvas(500, 500)
+    canvas = QObjects.canvas(800, 800)
     if xscale != 0 and yscale != 0:
         canvas.setScaledContents(True)
         canvas.setFixedSize(xscale, yscale)
