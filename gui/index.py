@@ -118,11 +118,19 @@ class Application(QMainWindow):
 
         flood_fill_button = QPushButton()
         flood_fill_button.setIcon(QIcon("icons/flood-fill.svg"))
-        flood_fill_button.setToolTip("Flood Fill Algorithm")
+        flood_fill_button.setToolTip("Flood Fill Algorithm (4-Connected)")
         flood_fill_button.clicked.connect(
-            lambda: self.select_button(flood_fill_button, OPCODE.FLOOD_FILL))
+            lambda: self.select_button(flood_fill_button, OPCODE.FLOOD_FILL_4))
         self.buttons.append(flood_fill_button)
         toolbar.addWidget(flood_fill_button)
+
+        flood_fill_8_button = QPushButton()
+        flood_fill_8_button.setIcon(QIcon("icons/flood-fill-8.svg"))
+        flood_fill_8_button.setToolTip("Flood Fill Algorithm (8-Connected)")
+        flood_fill_8_button.clicked.connect(
+            lambda: self.select_button(flood_fill_8_button, OPCODE.FLOOD_FILL_8))
+        self.buttons.append(flood_fill_8_button)
+        toolbar.addWidget(flood_fill_8_button)
 
         selection_area_button = QPushButton()
         selection_area_button.setIcon(QIcon("icons/selection.svg"))
@@ -186,10 +194,17 @@ class Application(QMainWindow):
                     self.points = []
             return
 
-        if self.operation == OPCODE.FLOOD_FILL:
+        if self.operation == OPCODE.FLOOD_FILL_4:
             point = Point(event.x(), event.y())
             self.CGLIB.apply(
-                self.operation, point=point, color=self.primary_color)
+                self.operation, point=point, color=self.primary_color, neighbors=4)
+            self.backup_pixmap = QPixmap(self.canvas.pixmap())
+            return
+
+        if self.operation == OPCODE.FLOOD_FILL_8:
+            point = Point(event.x(), event.y())
+            self.CGLIB.apply(
+                self.operation, point=point, color=self.primary_color, neighbors=8)
             self.backup_pixmap = QPixmap(self.canvas.pixmap())
             return
 

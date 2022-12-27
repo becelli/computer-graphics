@@ -40,8 +40,8 @@ fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba) -> 
 }
 
 #[pyfunction]
-fn flood_fill(image: Image, p0: Point, color: Rgba) -> PyResult<Image> {
-    Ok(operations::flood_fill(image, p0, color))
+fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> PyResult<Image> {
+    Ok(operations::flood_fill(image, p0, color, n4))
 }
 
 #[pyfunction]

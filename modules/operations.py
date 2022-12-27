@@ -96,8 +96,10 @@ class Operations:
 
     def flood_fill(self, **kwargs):
         p0 = kwargs['point']
+        neighbors = kwargs['neighbors']
+        n4 = False if neighbors == 8 else True
         color = self.qcolor_to_rgb(kwargs['color'])
-        return self.default_filter(cglib.flood_fill, p0=p0, color=color)
+        return self.default_filter(cglib.flood_fill, p0=p0, color=color, n4=n4)
 
     @staticmethod
     def shear(image: QImage, edges: list, matrix: np.ndarray) -> tuple[QImage, list]:
@@ -162,7 +164,8 @@ class CG():
             OPCODE.DRAW_CIRCLE_BRESENHAM: self.f.draw_circle_bresenham,
             OPCODE.DRAW_CIRCLE_PARAMETRIC: self.f.draw_circle_parametric,
             OPCODE.DRAW_TRIANGLE: self.f.draw_triangle,
-            OPCODE.FLOOD_FILL: self.f.flood_fill,
+            OPCODE.FLOOD_FILL_4: self.f.flood_fill,
+            OPCODE.FLOOD_FILL_8: self.f.flood_fill,
         }
 
         if code in all_operations:

@@ -206,31 +206,82 @@ fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f64) -> bool {
     let delta = (delta_r + delta_g + delta_b) / 3.0;
     delta < tolerance
 }
-
-pub fn flood_fill(image: Image, p0: Point, color: Rgba) -> Image {
-    let mut new_image: Image = image.clone();
-    let height = image.len();
-    let width = image[0].len();
-
-    // fill the region that is 10% similar to the color of the point.
-    let tolerance = 0.2;
-    let old_color = new_image[p0.1 as usize][p0.0 as usize];
-    let mut queue: VecDeque<Point> = VecDeque::new();
-    queue.push_back(p0);
-    while queue.len() > 0 {
-        let point = queue.pop_front().unwrap();
-        let x = point.0;
-        let y = point.1;
-        if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-            if is_similar_color(old_color, new_image[y as usize][x as usize], tolerance) {
-                new_image[y as usize][x as usize] = color;
-                queue.push_back((x + 1, y));
-                queue.push_back((x - 1, y));
-                queue.push_back((x, y + 1));
-                queue.push_back((x, y - 1));
+fn get_neighbors_4(point: Point) -> Vec<Point> {
+    let mut neighbors: Vec<Point> = Vec::new();
+    let x = point.0;
+    let y = point.1;
+    for i in -1..2 {
+        for j in -1..2 {
+            if i == 0 && j == 0 {
+                continue;
+            }
+            if i == 0 || j == 0 {
+                neighbors.push((x + i, y + j));
             }
         }
     }
+    neighbors
+}
+
+fn get_neighbors_8(point: Point) -> Vec<Point> {
+    let mut neighbors: Vec<Point> = Vec::new();
+    let x = point.0;
+    let y = point.1;
+    for i in -1..2 {
+        for j in -1..2 {
+            if i == 0 && j == 0 {
+                continue;
+            }
+            neighbors.push((x + i, y + j));
+        }
+    }
+    neighbors
+}
+
+pub fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> Image {
+    let mut new_image: Image = image.clone();
+    let height = image.len();
+    let width = image[0].len();
+    // fill the region that is 5% similar to the color of the point.
+    let tolerance = 0.05;
+
+    let old_color = new_image[p0.1 as usize][p0.0 as usize];
+    let mut queue: VecDeque<Point> = VecDeque::new();
+
+    let get_neighbors = match n4 {
+        true => get_neighbors_4,
+        false => get_neighbors_8,
+    };
+
+    queue.push_back(p0);
+    while queue.len() > 0 {
+        let point = queue.pop_back().unwrap();
+        let (x, y) = point;
+
+        if new_image[y as usize][x as usize] == color {
+            continue;
+        }
+
+        new_image[y as usize][x as usize] = color;
+
+        let neighbors = get_neighbors(point);
+
+        for neighbor in neighbors {
+            if neighbor.0 >= 0
+                && neighbor.0 < width as i32
+                && neighbor.1 >= 0
+                && neighbor.1 < height as i32
+            {
+                let neighbor_color = new_image[neighbor.1 as usize][neighbor.0 as usize];
+                if !neighbor_color.eq(&color)
+                    && is_similar_color(neighbor_color, old_color, tolerance)
+                {
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+    }
+
     new_image
 }
 
@@ -678,4 +729,24 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
         }
     }
     new_image
+}
+/*
+fn object_1(object_equation: F, domain_x: Edge, domain_y: Edge, color: Rgba) -> Vec<Vec<Rgba>> {
+    matrix: [[u16; 20]; 20];
+    for x in domain_x.iter(){
+        for y in domain_x.iter(){
+            matrix[x][y] = f(x, y);
+        }
+    }
+    matrix
+}
+*/
+pub fn z_buffer(
+    mut image: Image,
+    range_y: Edge,
+    range_x: Edge,
+    color: Rgba,
+    object_type: u16,
+) -> Image {
+    image
 }
