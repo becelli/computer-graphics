@@ -6,6 +6,7 @@ pub type Edge = (Point, Point);
 pub type HomogeneousPoint = (f64, f64, f64, f64);
 // pub type Border = (i32, i32, i32, i32);
 pub type HomogeneousEdge = (HomogeneousPoint, HomogeneousPoint);
+pub type ObjectPoint = (HomogeneousPoint, Rgba);
 pub struct Border {
     pub top: i32,
     pub bottom: i32,

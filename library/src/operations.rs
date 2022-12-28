@@ -1,10 +1,15 @@
 use crate::common::*;
 
 use ndarray::{arr1, arr2, ArrayBase, Dim, OwnedRepr};
-use std::{collections::VecDeque, f64::consts::PI};
+use std::f64::consts::PI;
 
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
-    let mut new_image: Image = image.clone();
+    let mut new_image = image.clone();
+    draw_line_helper(&mut new_image, &p0, &p1, &color);
+    new_image
+}
+
+fn draw_line_helper(image: &mut Image, p0: &Point, p1: &Point, color: &Rgba) {
     let delta_x: i32 = p1.0 - p0.0;
     let delta_y: i32 = p1.1 - p0.1;
     if delta_x.abs() > delta_y.abs() {
@@ -18,7 +23,7 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
                 p0_x,
                 (p0.1 as f64 + (p0_x - p0.0) as f64 * m).floor() as i32,
             );
-            new_image[new_point.1 as usize][new_point.0 as usize] = color;
+            image[new_point.1 as usize][new_point.0 as usize] = *color;
             p0_x += increment;
         }
     } else {
@@ -31,16 +36,20 @@ pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
                 (p0.0 as f64 + (p0_y - p0.1) as f64 * m).floor() as i32,
                 p0_y,
             );
-            new_image[new_point.1 as usize][new_point.0 as usize] = color;
+            image[new_point.1 as usize][new_point.0 as usize] = *color;
             p0_y += increment;
         }
     }
+}
+
+pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
+    let mut new_image: Image = image.clone();
+    draw_line_bresenham_helper(&mut new_image, &p0, &p1, &color);
     new_image
 }
 
 //draw a line using the bresenham algorithm
-pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
-    let mut new_image: Image = image.clone();
+fn draw_line_bresenham_helper(image: &mut Image, p0: &Point, p1: &Point, color: &Rgba) {
     let delta_x: i32 = (p1.0 - p0.0) as i32;
     let delta_y: i32 = (p1.1 - p0.1) as i32;
     // Determine the increments
@@ -58,11 +67,11 @@ pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> I
             if d > 0 {
                 yp += inc_y;
                 let new_point: Point = (x, yp);
-                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                image[new_point.1 as usize][new_point.0 as usize] = *color;
                 d += 2 * (inc_y * delta_y - inc_x * delta_x);
             } else {
                 let new_point: Point = (x, yp);
-                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                image[new_point.1 as usize][new_point.0 as usize] = *color;
                 d += 2 * inc_y * delta_y;
             }
             x += inc_x;
@@ -75,17 +84,16 @@ pub fn draw_line_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> I
             if d > 0 {
                 xp += inc_x;
                 let new_point: Point = (xp, y);
-                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                image[new_point.1 as usize][new_point.0 as usize] = *color;
                 d += 2 * (inc_x * delta_x - inc_y * delta_y);
             } else {
                 let new_point: Point = (xp, y);
-                new_image[new_point.1 as usize][new_point.0 as usize] = color;
+                image[new_point.1 as usize][new_point.0 as usize] = *color;
                 d += 2 * inc_x * delta_x;
             }
             y += inc_y;
         }
     }
-    new_image
 }
 
 fn calculate_radius(p0: Point, p1: Point) -> i32 {
@@ -124,9 +132,14 @@ pub fn draw_circle(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
 
 pub fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
+    draw_circle_bresenham_helper(&mut new_image, &p0, &p1, &color);
+    new_image
+}
+
+fn draw_circle_bresenham_helper(image: &mut Image, p0: &Point, p1: &Point, color: &Rgba) {
     let height = image.len();
     let width = image[0].len();
-    let radius = calculate_radius(p0, p1);
+    let radius = calculate_radius(*p0, *p1);
 
     let mut x = 0;
     let mut y = radius;
@@ -146,7 +159,7 @@ pub fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) ->
 
         for point in plot_points {
             if point.0 >= 0 && point.0 < width as i32 && point.1 >= 0 && point.1 < height as i32 {
-                new_image[point.1 as usize][point.0 as usize] = color;
+                image[point.1 as usize][point.0 as usize] = *color;
             }
         }
 
@@ -158,8 +171,6 @@ pub fn draw_circle_bresenham(image: Image, p0: Point, p1: Point, color: Rgba) ->
         }
         x = x + 1;
     }
-
-    new_image
 }
 
 pub fn draw_circle_parametric(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
@@ -183,9 +194,10 @@ pub fn draw_circle_parametric(image: Image, p0: Point, p1: Point, color: Rgba) -
 }
 
 pub fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba) -> Image {
-    let mut new_image = draw_line_bresenham(image, p0, p1, color);
-    new_image = draw_line_bresenham(new_image, p1, p2, color);
-    new_image = draw_line_bresenham(new_image, p2, p0, color);
+    let mut new_image = image.clone();
+    draw_line_bresenham_helper(&mut new_image, &p0, &p1, &color);
+    draw_line_bresenham_helper(&mut new_image, &p1, &p2, &color);
+    draw_line_bresenham_helper(&mut new_image, &p2, &p0, &color);
     new_image
 }
 
@@ -552,6 +564,28 @@ pub fn translate_object(
     (new_image, new_edges)
 }
 
+pub fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> Image {
+    let mut new_image: Image = image.clone();
+    let mut points_to_sweep: Vec<Point> = vec![];
+    let (xl, xr) = (0, image[0].len() as i32);
+    let (yt, yb) = (0, image.len() as i32);
+
+    //get the points to sweep
+    for y in yt..yb {
+        for x in xl..xr {
+            if new_image[y as usize][x as usize] == color {
+                points_to_sweep.push((x, y));
+            }
+        }
+    }
+
+    for point in points_to_sweep {
+        draw_circle_bresenham_helper(&mut new_image, &(0, 0), &point, &color);
+    }
+
+    new_image
+}
+
 //show the selected area
 pub fn select_area(image: Image, p0: Point, p1: Point) -> Image {
     let mut new_image: Image = image.clone();
@@ -730,17 +764,7 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
     }
     new_image
 }
-/*
-fn object_1(object_equation: F, domain_x: Edge, domain_y: Edge, color: Rgba) -> Vec<Vec<Rgba>> {
-    matrix: [[u16; 20]; 20];
-    for x in domain_x.iter(){
-        for y in domain_x.iter(){
-            matrix[x][y] = f(x, y);
-        }
-    }
-    matrix
-}
-*/
+
 pub fn z_buffer(
     mut image: Image,
     range_y: Edge,
@@ -748,5 +772,205 @@ pub fn z_buffer(
     color: Rgba,
     object_type: u16,
 ) -> Image {
+    let mut new_object: Vec<ObjectPoint> = match object_type {
+        1 => generate_object_1(
+            range_x.0 .0,
+            range_x.1 .0,
+            range_y.0 .1,
+            range_y.1 .1,
+            color,
+        ),
+        2 => generate_object_2(
+            range_x.0 .0,
+            range_x.1 .0,
+            range_y.0 .1,
+            range_y.1 .1,
+            color,
+        ),
+        3 => generate_object_3(
+            range_x.0 .0,
+            range_x.1 .0,
+            range_y.0 .1,
+            range_y.1 .1,
+            color,
+        ),
+        4 => generate_object_4(
+            range_x.0 .0,
+            range_x.1 .0,
+            range_y.0 .1,
+            range_y.1 .1,
+            color,
+        ),
+        _ => generate_object_5(20, (0, 0), color),
+    };
+
     image
 }
+
+fn generate_object_1(
+    min_x: i32,
+    max_x: i32,
+    min_y: i32,
+    max_y: i32,
+    color: Rgba,
+) -> Vec<ObjectPoint> {
+    let mut new_object: Vec<ObjectPoint> = vec![];
+    let (mut min_x, mut max_x, mut min_y, mut max_y) = (
+        f64::from(min_x),
+        f64::from(max_x),
+        f64::from(min_y),
+        f64::from(max_y),
+    );
+    // for x in min_x..=max_x {
+    //     for y in min_y..=max_y {
+    //         let new_point: HomogeneousPoint = (x.into(), y.into(), (x * x + y).into(), 1.);
+    //         new_object.push((new_point, color) as ObjectPoint);
+    //     }
+    // }
+    let delta = 0.01;
+    while min_x <= max_x {
+        while min_y <= max_y {
+            let new_point: HomogeneousPoint = (
+                min_x.into(),
+                min_y.into(),
+                (min_x * min_x + min_y).into(),
+                1.,
+            );
+            new_object.push((new_point, color) as ObjectPoint);
+            min_y += delta;
+        }
+        min_x += delta;
+    }
+    new_object
+}
+
+fn generate_object_2(
+    min_x: i32,
+    max_x: i32,
+    min_y: i32,
+    max_y: i32,
+    color: Rgba,
+) -> Vec<ObjectPoint> {
+    let mut new_object: Vec<ObjectPoint> = Vec::new();
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let new_point: HomogeneousPoint = (x.into(), y.into(), (3 * x - 2 * y + 5).into(), 1.);
+            new_object.push((new_point, color) as ObjectPoint);
+        }
+    }
+    new_object
+}
+
+fn generate_object_3(
+    min_a: i32,
+    max_a: i32,
+    min_t: i32,
+    max_t: i32,
+    color: Rgba,
+) -> Vec<ObjectPoint> {
+    let mut new_object: Vec<ObjectPoint> = Vec::new();
+    for t in min_t..=max_t {
+        for a in min_a..=max_a {
+            let new_point: HomogeneousPoint = (
+                (30.0 + f64::from(a).to_radians().cos() * f64::from(t)).into(),
+                (50.0 + f64::from(a).to_radians().sin() * f64::from(t)).into(),
+                (10.0 + f64::from(t)).into(),
+                1.,
+            );
+            new_object.push((new_point, color) as ObjectPoint);
+        }
+    }
+    new_object
+}
+
+fn generate_object_4(
+    min_a: i32,
+    max_a: i32,
+    min_t: i32,
+    max_t: i32,
+    color: Rgba,
+) -> Vec<ObjectPoint> {
+    let mut new_object: Vec<ObjectPoint> = Vec::new();
+    for t in min_t..=max_t {
+        for a in min_a..=max_a {
+            let new_point: HomogeneousPoint = (
+                (30. + f64::from(a).to_radians().cos() * f64::from(t)).into(),
+                (50. + f64::from(a).to_radians().sin() * f64::from(t)).into(),
+                (10 + t).into(),
+                1.,
+            );
+            new_object.push((new_point, color) as ObjectPoint);
+        }
+    }
+    new_object
+}
+
+fn generate_object_5(side: i32, center: Point, color: Rgba) -> Vec<ObjectPoint> {
+    // square of side 40, centered at the origin
+    let mut new_object: Vec<ObjectPoint> = vec![];
+
+    let (x, y) = center;
+
+    for i in -side..=side {
+        for j in -side..=side {
+            let new_point: HomogeneousPoint = ((x + i).into(), (y + j).into(), 0., 1.);
+            new_object.push((new_point, color) as ObjectPoint);
+        }
+    }
+    new_object
+}
+/*
+//apply the rotation matrix to the matrix
+fn rotate_function(
+    rotation_degrees: f64,
+    rotation_axis: char,
+    rotate_around_center: bool,
+) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
+    // rustfmt-ignore
+    let mut matrix = [
+        [0., 0., 0.],
+        [0., 0., 0.],
+        [0., 0., 0.],
+    ];
+    match rotation_axis {
+        'x' => {
+            matrix[0][0] += 1.;
+            matrix[1][1] += rotation_degrees.to_radians().cos();
+            matrix[1][2] += -rotation_degrees.to_radians().sin();
+            matrix[2][1] += rotation_degrees.to_radians().sin();
+            matrix[2][2] += rotation_degrees.to_radians().cos();
+        }
+        'y' => {
+            matrix[0][0] += rotation_degrees.to_radians().cos();
+            matrix[0][2] += -rotation_degrees.to_radians().sin();
+            matrix[2][0] += rotation_degrees.to_radians().sin();
+            matrix[2][2] += rotation_degrees.to_radians().cos();
+            matrix[1][1] += 1.;
+        }
+        'z' => {
+            matrix[0][0] += rotation_degrees.to_radians().cos();
+            matrix[0][1] += -rotation_degrees.to_radians().sin();
+            matrix[1][0] += rotation_degrees.to_radians().sin();
+            matrix[1][1] += rotation_degrees.to_radians().cos();
+            matrix[2][2] += 1.;
+        }
+        _ => {
+            matrix[0][0] += 1.;
+            matrix[1][1] += 1.;
+            matrix[2][2] += 1.;
+        }
+    }
+    //rotate around the center of the image
+    let final_matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>;
+    if rotate_around_center {
+        let center: HomogeneousPoint = calculate_center(&edges);
+        //translate the matrix to the center, the apply the rotation and then translate it back to the original position
+        let temp_matrix =
+            translation_matrix_3d(-center.0, -center.1, -center.2).dot(&arr2(&matrix));
+        final_matrix = temp_matrix.dot(&translation_matrix_3d(center.0, center.1, center.2));
+    } else {
+        final_matrix = arr2(&matrix);
+    }
+    final_matrix
+}
+*/
