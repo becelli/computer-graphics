@@ -1,3 +1,4 @@
+use common::ObjectPoint;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
@@ -100,6 +101,39 @@ fn rotate_object(
     ))
 }
 
+#[pyfunction]
+fn get_object(
+    range_y: Edge,
+    range_x: Edge,
+    color: Rgba,
+    object_type: u16,
+) -> PyResult<(Vec<ObjectPoint>)> {
+    Ok(operations::get_object(
+        range_y, range_x, color, object_type
+    ))
+}
+
+#[pyfunction]
+fn print_objects_in_screen(
+    mut image: Image, points: Vec<ObjectPoint>
+) -> PyResult<(Image)> {
+    Ok(operations::print_objects_in_screen(
+        image, points
+    ))
+}
+
+#[pyfunction]
+fn rotate_3d_object(
+    points: Vec<ObjectPoint>,
+    rotation_degrees: f64,
+    rotation_axis: char,
+    rotate_around_center: bool,
+) -> PyResult<(Vec<ObjectPoint>)> {
+    Ok(operations::rotate_3d_object(
+        &points, rotation_degrees, rotation_axis, rotate_around_center
+    ))
+}
+
 #[pymodule]
 fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(draw_line, m)?)?;
@@ -115,5 +149,8 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(scale_object, m)?)?;
     m.add_function(wrap_pyfunction!(shear_object, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_object, m)?)?;
+    m.add_function(wrap_pyfunction!(get_object, m)?)?;
+    m.add_function(wrap_pyfunction!(print_objects_in_screen, m)?)?;
+    m.add_function(wrap_pyfunction!(rotate_3d_object, m)?)?;
     Ok(())
 }

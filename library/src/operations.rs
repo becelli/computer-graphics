@@ -765,13 +765,55 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
     new_image
 }
 
-pub fn z_buffer(
-    mut image: Image,
+// pub fn render_3d_object(
+//     mut image: Image,
+//     range_y: Edge,
+//     range_x: Edge,
+//     color: Rgba,
+//     object_type: u16,
+// ) -> (Image, Vec<HomogeneousEdge>) {
+//     let mut rendered_object = get_object(range_y, range_x, color, object_type);
+//     // objects.append(&mut get_object(range_y, range_x, color, 2));
+//     // objects.append(&mut get_object(range_y, range_x, color, 3));
+//     // objects.append(&mut get_object(range_y, range_x, color, 4));
+//     // objects.append(&mut get_object(range_y, range_x, color, 5));
+//     let temp_buffer:Vec<ObjectPoint> = apply_z_buffer(rendered_object);
+//     image = print_objects_in_screen(image, temp_buffer);
+//     (image, rendered_object)
+// }
+
+fn z_buffer(object: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
+    let mut buffered_points: Vec<ObjectPoint> = vec![];
+    for point in object{
+        let h_point = point.0;
+        let length = buffered_points.len();
+        for i in 0..length{
+            let b_point = buffered_points[i].0;
+            if(b_point.0 == h_point.0 && b_point.1 == h_point.1 && b_point.2 > h_point.2){
+                buffered_points.remove(i);
+                break;
+            }
+        }
+        buffered_points.push((h_point, point.1));
+    }
+    buffered_points
+}
+
+pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Image{
+    let z_buffered_objects:Vec<ObjectPoint> = z_buffer(points);
+    for point in z_buffered_objects{
+        let new_point = homogeneous_point_to_point(point.0);
+        image[new_point.0 as usize][new_point.1 as usize] = point.1;
+    }
+    image
+}
+
+pub fn get_object(
     range_y: Edge,
     range_x: Edge,
     color: Rgba,
     object_type: u16,
-) -> Image {
+) -> Vec<ObjectPoint> {
     let mut new_object: Vec<ObjectPoint> = match object_type {
         1 => generate_object_1(
             range_x.0 .0,
@@ -803,8 +845,7 @@ pub fn z_buffer(
         ),
         _ => generate_object_5(20, (0, 0), color),
     };
-
-    image
+    new_object
 }
 
 fn generate_object_1(
@@ -919,18 +960,97 @@ fn generate_object_5(side: i32, center: Point, color: Rgba) -> Vec<ObjectPoint> 
     }
     new_object
 }
-/*
-//apply the rotation matrix to the matrix
-fn rotate_function(
+
+// //generate the rotation matrix for the parametric function
+// fn rotate_function(
+//     rotation_degrees_x: f64,
+//     rotation_degrees_y: f64,
+//     rotation_degrees_z: f64,
+//     original_coordinates: f64,
+//     rotate_around_center: bool,
+// ) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
+//     let cosx = rotation_degrees_x.to_radians().cos();
+//     // rustfmt-ignore
+//     let mut matrix = [
+//         [0., 0., 0.],
+//         [0., 0., 0.],
+//         [0., 0., 0.],
+//     ];
+//     match rotation_axis {
+//         'x' => {
+//             matrix[0][0] += 1.;
+//             matrix[1][1] += rotation_degrees.to_radians().cos();
+//             matrix[1][2] += -rotation_degrees.to_radians().sin();
+//             matrix[2][1] += rotation_degrees.to_radians().sin();
+//             matrix[2][2] += rotation_degrees.to_radians().cos();
+//         }
+//         'y' => {
+//             matrix[0][0] += rotation_degrees.to_radians().cos();
+//             matrix[0][2] += -rotation_degrees.to_radians().sin();
+//             matrix[2][0] += rotation_degrees.to_radians().sin();
+//             matrix[2][2] += rotation_degrees.to_radians().cos();
+//             matrix[1][1] += 1.;
+//         }
+//         'z' => {
+//             matrix[0][0] += rotation_degrees.to_radians().cos();
+//             matrix[0][1] += -rotation_degrees.to_radians().sin();
+//             matrix[1][0] += rotation_degrees.to_radians().sin();
+//             matrix[1][1] += rotation_degrees.to_radians().cos();
+//             matrix[2][2] += 1.;
+//         }
+//         _ => {
+//             matrix[0][0] += 1.;
+//             matrix[1][1] += 1.;
+//             matrix[2][2] += 1.;
+//         }
+//     }
+//     //rotate around the center of the image
+//     let final_matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>;
+//     if rotate_around_center {
+//         let center: HomogeneousPoint = calculate_center(&edges);
+//         //translate the matrix to the center, the apply the rotation and then translate it back to the original position
+//         let temp_matrix =
+//             translation_matrix_3d(-center.0, -center.1, -center.2).dot(&arr2(&matrix));
+//         final_matrix = temp_matrix.dot(&translation_matrix_3d(center.0, center.1, center.2));
+//     } else {
+//         final_matrix = arr2(&matrix);
+//     }
+//     final_matrix
+// }
+
+//calculate the center of an object
+fn calculate_center_object(points: &Vec<ObjectPoint>) -> HomogeneousPoint {
+    let center: HomogeneousPoint;
+    let mut center_x: f64 = 0.;
+    let mut center_y: f64 = 0.;
+    let mut center_z: f64 = 0.;
+    for point in points.iter() {
+        center_x += point.0.0;
+        center_y += point.0.1;
+        center_z += point.0.2;
+    }
+    center = (
+        center_x / (points.len() as f64),
+        center_y / (points.len() as f64),
+        center_z / (points.len() as f64),
+        1.,
+    );
+    center
+}
+
+//
+fn get_rotation_matrix_3d_object(
+    points: &Vec<ObjectPoint>,
     rotation_degrees: f64,
     rotation_axis: char,
     rotate_around_center: bool,
 ) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
     // rustfmt-ignore
     let mut matrix = [
-        [0., 0., 0.],
-        [0., 0., 0.],
-        [0., 0., 0.],
+        [0., 0., 0., 0.],
+        [0., 0., 0., 0.],
+        [0., 0., 0., 0.],
+        [0., 0., 0., 1.],
     ];
     match rotation_axis {
         'x' => {
@@ -963,7 +1083,7 @@ fn rotate_function(
     //rotate around the center of the image
     let final_matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>;
     if rotate_around_center {
-        let center: HomogeneousPoint = calculate_center(&edges);
+        let center: HomogeneousPoint = calculate_center_object(&points);
         //translate the matrix to the center, the apply the rotation and then translate it back to the original position
         let temp_matrix =
             translation_matrix_3d(-center.0, -center.1, -center.2).dot(&arr2(&matrix));
@@ -973,4 +1093,31 @@ fn rotate_function(
     }
     final_matrix
 }
-*/
+
+//apply the rotation matrix to the matrix
+pub fn rotate_3d_object(
+    points: &Vec<ObjectPoint>,
+    rotation_degrees: f64,
+    rotation_axis: char,
+    rotate_around_center: bool,
+) -> Vec<ObjectPoint> {
+    let matrix = get_rotation_matrix_3d_object(points, rotation_degrees, rotation_axis, rotate_around_center);
+    let mut new_points:Vec<ObjectPoint> = vec![];
+    for point in points{
+        let product = arr1(&[
+            point.0.0 as f64,
+            point.0.1 as f64,
+            point.0.2 as f64,
+            point.0.3 as f64,
+        ])
+        .dot(&matrix);
+        let new_point: HomogeneousPoint = (
+            product[0] / product[3],
+            product[1] / product[3],
+            product[2] / product[3],
+            1.,
+        );
+        new_points.push((new_point, point.1));
+    }
+    new_points
+}
