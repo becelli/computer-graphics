@@ -1,7 +1,7 @@
-use crate::common::*;
+use crate::{common::*, cglib::init};
 
 use ndarray::{arr1, arr2, ArrayBase, Dim, OwnedRepr};
-use std::f64::consts::PI;
+use std::{f64::consts::PI, vec};
 
 pub fn draw_line(image: Image, p0: Point, p1: Point, color: Rgba) -> Image {
     let mut new_image = image.clone();
@@ -789,7 +789,7 @@ fn z_buffer(object: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
         let length = buffered_points.len();
         for i in 0..length{
             let b_point = buffered_points[i].0;
-            if(b_point.0 == h_point.0 && b_point.1 == h_point.1 && b_point.2 > h_point.2){
+            if b_point.0 == h_point.0 && b_point.1 == h_point.1 && b_point.2 > h_point.2 {
                 buffered_points.remove(i);
                 break;
             }
@@ -809,38 +809,43 @@ pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Im
 }
 
 pub fn get_object(
-    range_y: Edge,
-    range_x: Edge,
+    initial_translation: HomogeneousPoint,
+    range_1: Point,
+    range_2: Point,
     color: Rgba,
     object_type: u16,
 ) -> Vec<ObjectPoint> {
     let mut new_object: Vec<ObjectPoint> = match object_type {
         1 => generate_object_1(
-            range_x.0 .0,
-            range_x.1 .0,
-            range_y.0 .1,
-            range_y.1 .1,
+            initial_translation,
+            range_1.0,
+            range_1.1,
+            range_2.0,
+            range_2.1,
             color,
         ),
         2 => generate_object_2(
-            range_x.0 .0,
-            range_x.1 .0,
-            range_y.0 .1,
-            range_y.1 .1,
+            initial_translation,
+            range_1.0,
+            range_1.1,
+            range_2.0,
+            range_2.1,
             color,
         ),
         3 => generate_object_3(
-            range_x.0 .0,
-            range_x.1 .0,
-            range_y.0 .1,
-            range_y.1 .1,
+            initial_translation,
+            range_1.0,
+            range_1.1,
+            range_2.0,
+            range_2.1,
             color,
         ),
         4 => generate_object_4(
-            range_x.0 .0,
-            range_x.1 .0,
-            range_y.0 .1,
-            range_y.1 .1,
+            initial_translation,
+            range_1.0,
+            range_1.1,
+            range_2.0,
+            range_2.1,
             color,
         ),
         _ => generate_object_5(20, (0, 0), color),
@@ -849,6 +854,7 @@ pub fn get_object(
 }
 
 fn generate_object_1(
+    initial_translation: HomogeneousPoint,
     min_x: i32,
     max_x: i32,
     min_y: i32,
@@ -886,6 +892,7 @@ fn generate_object_1(
 }
 
 fn generate_object_2(
+    initial_translation: HomogeneousPoint,
     min_x: i32,
     max_x: i32,
     min_y: i32,
@@ -903,6 +910,7 @@ fn generate_object_2(
 }
 
 fn generate_object_3(
+    initial_translation: HomogeneousPoint,
     min_a: i32,
     max_a: i32,
     min_t: i32,
@@ -925,6 +933,7 @@ fn generate_object_3(
 }
 
 fn generate_object_4(
+    initial_translation: HomogeneousPoint,
     min_a: i32,
     max_a: i32,
     min_t: i32,
@@ -960,63 +969,6 @@ fn generate_object_5(side: i32, center: Point, color: Rgba) -> Vec<ObjectPoint> 
     }
     new_object
 }
-
-// //generate the rotation matrix for the parametric function
-// fn rotate_function(
-//     rotation_degrees_x: f64,
-//     rotation_degrees_y: f64,
-//     rotation_degrees_z: f64,
-//     original_coordinates: f64,
-//     rotate_around_center: bool,
-// ) -> ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> {
-//     let cosx = rotation_degrees_x.to_radians().cos();
-//     // rustfmt-ignore
-//     let mut matrix = [
-//         [0., 0., 0.],
-//         [0., 0., 0.],
-//         [0., 0., 0.],
-//     ];
-//     match rotation_axis {
-//         'x' => {
-//             matrix[0][0] += 1.;
-//             matrix[1][1] += rotation_degrees.to_radians().cos();
-//             matrix[1][2] += -rotation_degrees.to_radians().sin();
-//             matrix[2][1] += rotation_degrees.to_radians().sin();
-//             matrix[2][2] += rotation_degrees.to_radians().cos();
-//         }
-//         'y' => {
-//             matrix[0][0] += rotation_degrees.to_radians().cos();
-//             matrix[0][2] += -rotation_degrees.to_radians().sin();
-//             matrix[2][0] += rotation_degrees.to_radians().sin();
-//             matrix[2][2] += rotation_degrees.to_radians().cos();
-//             matrix[1][1] += 1.;
-//         }
-//         'z' => {
-//             matrix[0][0] += rotation_degrees.to_radians().cos();
-//             matrix[0][1] += -rotation_degrees.to_radians().sin();
-//             matrix[1][0] += rotation_degrees.to_radians().sin();
-//             matrix[1][1] += rotation_degrees.to_radians().cos();
-//             matrix[2][2] += 1.;
-//         }
-//         _ => {
-//             matrix[0][0] += 1.;
-//             matrix[1][1] += 1.;
-//             matrix[2][2] += 1.;
-//         }
-//     }
-//     //rotate around the center of the image
-//     let final_matrix: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>;
-//     if rotate_around_center {
-//         let center: HomogeneousPoint = calculate_center(&edges);
-//         //translate the matrix to the center, the apply the rotation and then translate it back to the original position
-//         let temp_matrix =
-//             translation_matrix_3d(-center.0, -center.1, -center.2).dot(&arr2(&matrix));
-//         final_matrix = temp_matrix.dot(&translation_matrix_3d(center.0, center.1, center.2));
-//     } else {
-//         final_matrix = arr2(&matrix);
-//     }
-//     final_matrix
-// }
 
 //calculate the center of an object
 fn calculate_center_object(points: &Vec<ObjectPoint>) -> HomogeneousPoint {
@@ -1120,4 +1072,147 @@ pub fn rotate_3d_object(
         new_points.push((new_point, point.1));
     }
     new_points
+}
+
+pub fn get_object_ramp() -> Vec<ObjectPoint>{
+    let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
+    rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 6));
+    rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1));
+    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 0], 7));
+    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 0], 1));
+    rendered_objects.append(&mut get_object((100.,0.,0.,1.), (0,20),  (0,40), [150, 75, 0, 0], 1));
+    rendered_objects.append(&mut get_object((100.,0.,0.,1.), (0,60),  (0,20), [0, 0, 255, 0], 8));
+    
+    rendered_objects
+}
+
+fn get_object_sphere(center: HomogeneousPoint, radius: f64) -> Vec<ObjectPoint>{
+    let delta_theta = 2.*PI/(100.*radius);
+    let delta_phi = radius/100.;
+    let mut i = 0.;
+    let mut rendered_sphere = vec![];
+    while i < 2.*PI{
+        let mut j = 0.;
+        while j < 2.*PI{
+            let new_point:HomogeneousPoint = (center.0 + radius*delta_theta.sin()*delta_phi.cos(), center.1+ radius*delta_theta.sin()*delta_phi.sin(), center.2 + radius*delta_theta.cos(), center.3);
+        }
+    }
+    rendered_sphere
+}
+
+fn get_object_plane_xy(range: HomogeneousEdge) -> Vec<ObjectPoint>{
+    let new_object:Vec<ObjectPoint> = vec![];
+    new_object
+}
+
+fn illumination_model_1(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, observer_pos: HomogeneousPoint) -> Vec<ObjectPoint>{
+    let mut illuminated_object:Vec<ObjectPoint> = vec![];
+    for point in rendered_objects{
+        let normal:HomogeneousPoint = (0., 0., 1., 1.);
+        let cosine = calculate_angle(observer_pos, normal);
+        let old_color = point.1;
+        let illumination:f64 = ia*ka + il*kd*cosine;
+        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
+        illuminated_object.push((point.0, new_color));
+    }
+    illuminated_object
+}
+
+fn illumination_model_2(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, lamp_pos: HomogeneousPoint, n: f64) -> Vec<ObjectPoint>{
+    let mut illuminated_object:Vec<ObjectPoint> = vec![];
+    for point in rendered_objects{
+        let normal:HomogeneousPoint = (0., 0., 1., 1.);
+        let cosine_delta = calculate_angle(observer_pos, normal);
+        let cosine_alfa = calculate_angle(lamp_pos, normal);
+        let old_color = point.1;
+        let illumination:f64 = ia*ka + il*(kd*cosine_delta + ks*cosine_alfa.powf(n));
+        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
+        illuminated_object.push((point.0, new_color));
+    }
+    illuminated_object
+}
+
+//nota para mim mesmo: talvez nao seja necessario uma normal para a esfera, visto que o centro esta em (0, 0, 0). Logo, toda normal sera igual
+//ao ponto da esfera normalizado
+fn get_normal_sphere(center:HomogeneousPoint, point: HomogeneousPoint) -> f64{
+    let normal = 0.;
+    normal
+}
+
+fn array_norm(arr: ArrayBase<OwnedRepr<f64>, Dim<[usize; 1]>>) -> f64{
+    let mut norm:f64 = 0.;
+    let len = arr.len();
+    for num in arr{
+        norm += num*num;
+    }
+    norm = norm/len as f64;
+    norm
+}
+
+fn calculate_angle(obs_pos: HomogeneousPoint, normal: HomogeneousPoint) -> f64{
+    let array1 = arr1(&[
+        obs_pos.0 as f64,
+        obs_pos.1 as f64,
+        obs_pos.2 as f64,
+    ]);
+    let array2 = arr1(&[
+        normal.0 as f64,
+        normal.1 as f64,
+        normal.2 as f64,
+    ]);
+    let cos_delta:f64 = array1.dot(&array2)/(array_norm(array1) * array_norm(array2));
+    cos_delta
+}
+
+fn illumination_model_1_sphere(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, center:HomogeneousPoint) -> Vec<ObjectPoint>{
+    let mut illuminated_object: Vec<ObjectPoint> = vec![];
+    for point in rendered_objects{
+        let normal:HomogeneousPoint = point.0;
+        let cosine = calculate_angle(observer_pos, normal);
+        let old_color = point.1;
+        let illumination:f64 = ia*ka + il*kd*cosine;
+        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
+        illuminated_object.push((point.0, new_color));
+    }
+    illuminated_object
+}
+
+fn illumination_model_2_sphere(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, lamp_pos: HomogeneousPoint, center:HomogeneousPoint, n: f64) -> Vec<ObjectPoint>{
+    let mut illuminated_object: Vec<ObjectPoint> = vec![];
+    for point in rendered_objects{
+        let normal:HomogeneousPoint = point.0;
+        let cosine_delta = calculate_angle(observer_pos, normal);
+        let cosine_alfa = calculate_angle(lamp_pos, normal);
+        let old_color = point.1;
+        let illumination:f64 = ia*ka + il*(kd*cosine_delta+ks*cosine_alfa.powf(n));
+        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
+        illuminated_object.push((point.0, new_color));
+    }
+    illuminated_object
+}
+
+pub fn apply_luminosity(mut image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2: f64, ks_2: f64, ia: f64, ka: f64, il:f64, n:f64) -> Image{
+    let center:HomogeneousPoint = (0., 0., 0., 0.);
+    let radius = 50.;
+    let lamp_pos:HomogeneousPoint = (100., 0., 100., 1.);
+    let observer_pos: HomogeneousPoint = (0., 0., 100., 1.);
+    let range: HomogeneousEdge = ((0., 0., 0., 1.),(100., 100., 0., 1.));
+    let mut rendered_objects = get_object_sphere(center, radius);
+    let mut rendered_sphere = get_object_plane_xy(range);
+
+    match model{
+        1 => {
+            rendered_objects = illumination_model_1(rendered_objects, ia, ka, il, kd_1, observer_pos);
+            rendered_sphere = illumination_model_1_sphere(rendered_sphere, ia, ka, il, kd_2, ks_2, observer_pos, center);
+        }
+        2 => {
+            rendered_objects = illumination_model_2(rendered_objects, ia, ka, il, kd_1, ks_1, observer_pos, lamp_pos, n);
+            rendered_sphere = illumination_model_2_sphere(rendered_sphere, ia, ka, il, kd_2, ks_2,  observer_pos, lamp_pos, center, n);
+        }
+        _ => {
+
+        }
+    }
+    rendered_objects.append(&mut rendered_sphere); 
+    print_objects_in_screen(image, rendered_objects)
 }

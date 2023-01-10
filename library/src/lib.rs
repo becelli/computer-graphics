@@ -1,3 +1,4 @@
+use common::HomogeneousPoint;
 use common::ObjectPoint;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
@@ -103,20 +104,21 @@ fn rotate_object(
 
 #[pyfunction]
 fn get_object(
-    range_y: Edge,
-    range_x: Edge,
+    initial_translation: HomogeneousPoint,
+    range_1: Point,
+    range_2: Point,
     color: Rgba,
     object_type: u16,
-) -> PyResult<(Vec<ObjectPoint>)> {
+) -> PyResult<Vec<ObjectPoint>> {
     Ok(operations::get_object(
-        range_y, range_x, color, object_type
+        initial_translation, range_1, range_2, color, object_type
     ))
 }
 
 #[pyfunction]
 fn print_objects_in_screen(
-    mut image: Image, points: Vec<ObjectPoint>
-) -> PyResult<(Image)> {
+    image: Image, points: Vec<ObjectPoint>
+) -> PyResult<Image> {
     Ok(operations::print_objects_in_screen(
         image, points
     ))
@@ -128,9 +130,16 @@ fn rotate_3d_object(
     rotation_degrees: f64,
     rotation_axis: char,
     rotate_around_center: bool,
-) -> PyResult<(Vec<ObjectPoint>)> {
+) -> PyResult<Vec<ObjectPoint>> {
     Ok(operations::rotate_3d_object(
         &points, rotation_degrees, rotation_axis, rotate_around_center
+    ))
+}
+
+#[pyfunction]
+fn apply_luminosity(mut image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2: f64, ks_2: f64, ia: f64, ka: f64, il:f64, n:f64) -> PyResult<Image>{
+    Ok(operations::apply_luminosity(
+        image, model, kd_1, ks_1, kd_2, ks_2, ia, ka, il, n
     ))
 }
 
@@ -152,5 +161,6 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_object, m)?)?;
     m.add_function(wrap_pyfunction!(print_objects_in_screen, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_3d_object, m)?)?;
+    m.add_function(wrap_pyfunction!(apply_luminosity, m)?)?;
     Ok(())
 }
