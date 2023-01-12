@@ -102,17 +102,11 @@ fn rotate_object(
     ))
 }
 
+
+
 #[pyfunction]
-fn get_object(
-    initial_translation: HomogeneousPoint,
-    range_1: Point,
-    range_2: Point,
-    color: Rgba,
-    object_type: u16,
-) -> PyResult<Vec<ObjectPoint>> {
-    Ok(operations::get_object(
-        initial_translation, range_1, range_2, color, object_type
-    ))
+fn z_buffer_objects() -> PyResult<Vec<ObjectPoint>> {
+    Ok(operations::z_buffer_objects())
 }
 
 #[pyfunction]
@@ -121,6 +115,16 @@ fn print_objects_in_screen(
 ) -> PyResult<Image> {
     Ok(operations::print_objects_in_screen(
         image, points
+    ))
+}
+
+#[pyfunction]
+fn translate_3d_object(
+    points: Vec<ObjectPoint>,
+    movement: HomogeneousPoint,
+) -> PyResult<Vec<ObjectPoint>>{
+    Ok(operations::translate_3d_object(
+        &points, movement
     ))
 }
 
@@ -158,8 +162,9 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(scale_object, m)?)?;
     m.add_function(wrap_pyfunction!(shear_object, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_object, m)?)?;
-    m.add_function(wrap_pyfunction!(get_object, m)?)?;
+    m.add_function(wrap_pyfunction!(z_buffer_objects, m)?)?;
     m.add_function(wrap_pyfunction!(print_objects_in_screen, m)?)?;
+    m.add_function(wrap_pyfunction!(translate_3d_object, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_3d_object, m)?)?;
     m.add_function(wrap_pyfunction!(apply_luminosity, m)?)?;
     Ok(())

@@ -808,7 +808,28 @@ pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Im
     image
 }
 
-pub fn get_object(
+//return various objects to test in the z-buffer
+pub fn z_buffer_objects() -> Vec<ObjectPoint>{
+    let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
+    rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 2));
+    rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 3));
+    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 0], 4));
+    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 0], 5));
+    rendered_objects.append(&mut z_buffer_cube());
+    rendered_objects
+}
+
+//return various objects to test in the z-buffer
+fn z_buffer_cube() -> Vec<ObjectPoint>{
+    let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
+    rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 2));
+    rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 3));
+    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 0], 4));
+    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 0], 5));
+    rendered_objects
+}
+
+fn get_object(
     initial_translation: HomogeneousPoint,
     range_1: Point,
     range_2: Point,
@@ -868,12 +889,6 @@ fn generate_object_1(
         f64::from(min_y),
         f64::from(max_y),
     );
-    // for x in min_x..=max_x {
-    //     for y in min_y..=max_y {
-    //         let new_point: HomogeneousPoint = (x.into(), y.into(), (x * x + y).into(), 1.);
-    //         new_object.push((new_point, color) as ObjectPoint);
-    //     }
-    // }
     let delta = 0.01;
     while min_x <= max_x {
         while min_y <= max_y {
@@ -1074,14 +1089,27 @@ pub fn rotate_3d_object(
     new_points
 }
 
+//move the object to a specific point
+pub fn translate_3d_object(
+    points: &Vec<ObjectPoint>,
+    movement: HomogeneousPoint,
+) -> Vec<ObjectPoint> {
+    let mut new_points:Vec<ObjectPoint> = vec![];
+    for point in points{
+        let translated_point:HomogeneousPoint = (point.0.0 + movement.0, point.0.1 + movement.1, point.0.2 + movement.2, 1.);
+        new_points.push((translated_point, point.1));
+    }
+    new_points
+}
+
 pub fn get_object_ramp() -> Vec<ObjectPoint>{
-    let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
-    rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 6));
-    rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1));
-    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 0], 7));
-    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 0], 1));
-    rendered_objects.append(&mut get_object((100.,0.,0.,1.), (0,20),  (0,40), [150, 75, 0, 0], 1));
-    rendered_objects.append(&mut get_object((100.,0.,0.,1.), (0,60),  (0,20), [0, 0, 255, 0], 8));
+    let mut rendered_objects = get_object_plane_xy((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0]);
+    rendered_objects.append(&mut get_object_plane_xz((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 1]));
+    rendered_objects.append(&mut get_object_plane_xy((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 1]));
+    rendered_objects.append(&mut get_object_plane_yz((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 1]));
+    rendered_objects.append(&mut get_object_plane_xy((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 1]));
+    rendered_objects.append(&mut get_object_plane_xy((100.,0.,0.,1.), (0,20),  (0,40), [150, 75, 0, 1]));
+    rendered_objects.append(&mut get_object_plane_declined((100.,0.,0.,1.), (0,60),  (0,20), [0, 0, 255, 1]));
     
     rendered_objects
 }
@@ -1100,7 +1128,82 @@ fn get_object_sphere(center: HomogeneousPoint, radius: f64) -> Vec<ObjectPoint>{
     rendered_sphere
 }
 
-fn get_object_plane_xy(range: HomogeneousEdge) -> Vec<ObjectPoint>{
+fn get_object_plane_xy(initial_translation: HomogeneousPoint, range_x: Point, range_y: Point, color: Rgba) -> Vec<ObjectPoint>{
+    let mut new_object: Vec<ObjectPoint> = vec![];
+    let (mut min_x, mut max_x, mut min_y, mut max_y) = (
+        f64::from(range_x.0),
+        f64::from(range_x.1),
+        f64::from(range_y.0),
+        f64::from(range_y.1),
+    );
+    let delta = 0.01;
+    while min_x <= max_x {
+        while min_y <= max_y {
+            let new_point: HomogeneousPoint = (
+                initial_translation.0 + min_x,
+                initial_translation.1 + min_y,
+                initial_translation.2,
+                1.,
+            );
+            new_object.push((new_point, color) as ObjectPoint);
+            min_y += delta;
+        }
+        min_x += delta;
+    }
+    new_object
+}
+
+fn get_object_plane_xz(initial_translation: HomogeneousPoint, range_x: Point, range_z: Point, color: Rgba) -> Vec<ObjectPoint>{
+    let mut new_object: Vec<ObjectPoint> = vec![];
+    let (mut min_x, mut max_x, mut min_z, mut max_z) = (
+        f64::from(range_x.0),
+        f64::from(range_x.1),
+        f64::from(range_z.0),
+        f64::from(range_z.1),
+    );
+    let delta = 0.01;
+    while min_x <= max_x {
+        while min_z <= max_z {
+            let new_point: HomogeneousPoint = (
+                initial_translation.0 + min_x,
+                initial_translation.1,
+                initial_translation.2 + min_z,
+                1.,
+            );
+            new_object.push((new_point, color) as ObjectPoint);
+            min_z += delta;
+        }
+        min_x += delta;
+    }
+    new_object
+}
+
+fn get_object_plane_yz(initial_translation: HomogeneousPoint, range_y: Point, range_z: Point, color: Rgba) -> Vec<ObjectPoint>{
+    let mut new_object: Vec<ObjectPoint> = vec![];
+    let (mut min_y, mut max_y, mut min_z, mut max_z) = (
+        f64::from(range_y.0),
+        f64::from(range_y.1),
+        f64::from(range_z.0),
+        f64::from(range_z.1),
+    );
+    let delta = 0.01;
+    while min_y <= max_y {
+        while min_z <= max_z {
+            let new_point: HomogeneousPoint = (
+                initial_translation.0,
+                min_y + initial_translation.1,
+                min_z + initial_translation.2,
+                1.,
+            );
+            new_object.push((new_point, color) as ObjectPoint);
+            min_z += delta;
+        }
+        min_y += delta;
+    }
+    new_object
+}
+
+fn get_object_plane_declined(initial_translation: HomogeneousPoint, range_1: Point, range_2: Point, color: Rgba) -> Vec<ObjectPoint>{
     let new_object:Vec<ObjectPoint> = vec![];
     new_object
 }
@@ -1130,13 +1233,6 @@ fn illumination_model_2(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64
         illuminated_object.push((point.0, new_color));
     }
     illuminated_object
-}
-
-//nota para mim mesmo: talvez nao seja necessario uma normal para a esfera, visto que o centro esta em (0, 0, 0). Logo, toda normal sera igual
-//ao ponto da esfera normalizado
-fn get_normal_sphere(center:HomogeneousPoint, point: HomogeneousPoint) -> f64{
-    let normal = 0.;
-    normal
 }
 
 fn array_norm(arr: ArrayBase<OwnedRepr<f64>, Dim<[usize; 1]>>) -> f64{
@@ -1197,8 +1293,8 @@ pub fn apply_luminosity(mut image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2:
     let lamp_pos:HomogeneousPoint = (100., 0., 100., 1.);
     let observer_pos: HomogeneousPoint = (0., 0., 100., 1.);
     let range: HomogeneousEdge = ((0., 0., 0., 1.),(100., 100., 0., 1.));
-    let mut rendered_objects = get_object_sphere(center, radius);
-    let mut rendered_sphere = get_object_plane_xy(range);
+    let mut rendered_objects = get_object_plane_xy((0., 0., 0., 0.), (0, 100), (0, 100), [0, 0, 255, 1]);
+    let mut rendered_sphere = get_object_sphere(center, radius);
 
     match model{
         1 => {

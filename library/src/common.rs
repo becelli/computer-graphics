@@ -14,7 +14,7 @@ pub struct Border {
     pub right: i32,
 }
 
-pub enum Neighborhood {
-    Four,
-    Eight,
-}
+// pub enum Neighborhood {
+//     Four,
+//     Eight,
+// }
