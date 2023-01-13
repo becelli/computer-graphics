@@ -153,6 +153,7 @@ class Operations:
     @staticmethod
     def get_objects(index=1):
         objects = cglib.get_object(index)
+
         return objects
 
     @staticmethod
@@ -161,8 +162,11 @@ class Operations:
 
         image = Operations.get_img_pixels(image, w, h)
 
-        result = cglib.print_objects_in_screen(image=image, points=edges)
-        return result
+        image_result = cglib.print_objects_in_screen(image=image, points=edges)
+        new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
+        img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
+
+        return img
 
 
 class CG():

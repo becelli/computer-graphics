@@ -846,7 +846,7 @@ pub fn get_object(
 
 //return various objects to test in the z-buffer
 fn get_z_buffer_objects() -> Vec<ObjectPoint>{
-    let mut rendered_objects = generate_object_1(0, 20, 0, 40, [0,255, 0, 1]);
+    let mut rendered_objects = generate_object_1(0, 20, 0, 40, [1, 255, 0, 1]);
     rendered_objects.append(&mut generate_object_2(0, 20, 0, 80, [0,255, 0, 1]));
     rendered_objects.append(&mut generate_object_3(0, 20, 0, 40, [0,255, 0, 1]));
     rendered_objects.append(&mut generate_object_4(0, 40, 0, 80, [255, 255, 0, 1]));
