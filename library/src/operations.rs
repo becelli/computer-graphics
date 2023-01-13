@@ -808,17 +808,19 @@ fn z_buffer(object: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
 }
 
 //print a 3d object in 2d
-pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Image{
+pub fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>) -> Image{
+    let mut new_image = image.clone();
     let z_buffered_objects:Vec<ObjectPoint> = z_buffer(points);
     let height = image.len();
     let width = image[0].len();
     for point in z_buffered_objects{
         let new_point = homogeneous_point_to_point(point.0);
+        let color = point.1;
         if new_point.0 >= 0 && new_point.0 < width as i32 && new_point.1 >= 0 && new_point.1 < height as i32 {
-            image[new_point.1 as usize][new_point.0 as usize] = point.1;
+            new_image[new_point.1 as usize][new_point.0 as usize] = color;
         }
     }
-    image
+    new_image
 }
 
 // //return a cube to be visualized in the z-buffer
@@ -1302,7 +1304,7 @@ fn illumination_model_2_sphere(rendered_objects: Vec<ObjectPoint>, ia: f64, ka: 
         let cosine_alfa = calculate_angle(lamp_pos, normal);
         let old_color = point.1;
         let d:f64 = calculate_distance(point.0, observer_pos);
-        let illumination:f64 = ia*ka + il*(kd*cosine_delta+ks*cosine_alfa.powf(n));
+        let illumination:f64 = ia*ka + il*(kd*cosine_delta+ks*cosine_alfa.powf(n))/d;
         let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
         illuminated_object.push((point.0, new_color));
     }
