@@ -150,6 +150,20 @@ class Operations:
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
         return img, edges_result
 
+    @staticmethod
+    def get_objects(index=1):
+        objects = cglib.get_object(index)
+        return objects
+
+    @staticmethod
+    def print_objects_in_screen(image: QImage, edges: list):
+        w, h = image.width(), image.height()
+
+        image = Operations.get_img_pixels(image, w, h)
+
+        result = cglib.print_objects_in_screen(image=image, points=edges)
+        return result
+
 
 class CG():
     def __init__(self, canvas: QLabel):
