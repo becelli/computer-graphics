@@ -201,102 +201,6 @@ pub fn draw_triangle(image: Image, p0: Point, p1: Point, p2: Point, color: Rgba)
     new_image
 }
 
-fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f64) -> bool {
-    let r1 = f64::from(color1[0]);
-    let g1 = f64::from(color1[1]);
-    let b1 = f64::from(color1[2]);
-    let r2 = f64::from(color2[0]);
-    let g2 = f64::from(color2[1]);
-    let b2 = f64::from(color2[2]);
-    let delta_r = (r1 - r2).abs();
-    let delta_g = (g1 - g2).abs();
-    let delta_b = (b1 - b2).abs();
-    let max = 255.0;
-    let delta_r = delta_r / max;
-    let delta_g = delta_g / max;
-    let delta_b = delta_b / max;
-    let delta = (delta_r + delta_g + delta_b) / 3.0;
-    delta < tolerance
-}
-fn get_neighbors_4(point: Point) -> Vec<Point> {
-    let mut neighbors: Vec<Point> = Vec::new();
-    let x = point.0;
-    let y = point.1;
-    for i in -1..2 {
-        for j in -1..2 {
-            if i == 0 && j == 0 {
-                continue;
-            }
-            if i == 0 || j == 0 {
-                neighbors.push((x + i, y + j));
-            }
-        }
-    }
-    neighbors
-}
-
-fn get_neighbors_8(point: Point) -> Vec<Point> {
-    let mut neighbors: Vec<Point> = Vec::new();
-    let x = point.0;
-    let y = point.1;
-    for i in -1..2 {
-        for j in -1..2 {
-            if i == 0 && j == 0 {
-                continue;
-            }
-            neighbors.push((x + i, y + j));
-        }
-    }
-    neighbors
-}
-
-pub fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> Image {
-    let mut new_image: Image = image.clone();
-    let height = image.len();
-    let width = image[0].len();
-    // fill the region that is 5% similar to the color of the point.
-    let tolerance = 0.05;
-
-    let old_color = new_image[p0.1 as usize][p0.0 as usize];
-    let mut queue: Vec<Point> = Vec::new();
-
-    let get_neighbors = match n4 {
-        true => get_neighbors_4,
-        false => get_neighbors_8,
-    };
-
-    queue.push(p0);
-    while queue.len() > 0 {
-        let point = queue.pop().unwrap();
-        let (x, y) = point;
-
-        if new_image[y as usize][x as usize] == color {
-            continue;
-        }
-
-        new_image[y as usize][x as usize] = color;
-
-        let neighbors = get_neighbors(point);
-
-        for neighbor in neighbors {
-            if neighbor.0 >= 0
-                && neighbor.0 < width as i32
-                && neighbor.1 >= 0
-                && neighbor.1 < height as i32
-            {
-                let neighbor_color = new_image[neighbor.1 as usize][neighbor.0 as usize];
-                if !neighbor_color.eq(&color)
-                    && is_similar_color(neighbor_color, old_color, tolerance)
-                {
-                    queue.push(neighbor);
-                }
-            }
-        }
-    }
-
-    new_image
-}
-
 //convert a homogeneous point to point
 fn homogeneous_point_to_point(h_point: HomogeneousPoint) -> Point {
     let normalized_h_point: HomogeneousPoint;
@@ -564,28 +468,6 @@ pub fn translate_object(
     (new_image, new_edges)
 }
 
-pub fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> Image {
-    let mut new_image: Image = image.clone();
-    let mut points_to_sweep: Vec<Point> = vec![];
-    let (xl, xr) = (0, image[0].len() as i32);
-    let (yt, yb) = (0, image.len() as i32);
-
-    //get the points to sweep
-    for y in yt..yb {
-        for x in xl..xr {
-            if new_image[y as usize][x as usize] == color {
-                points_to_sweep.push((x, y));
-            }
-        }
-    }
-
-    for point in points_to_sweep {
-        draw_circle_bresenham_helper(&mut new_image, &(0, 0), &point, &color);
-    }
-
-    new_image
-}
-
 //show the selected area
 pub fn select_area(image: Image, p0: Point, p1: Point) -> Image {
     let mut new_image: Image = image.clone();
@@ -765,23 +647,133 @@ pub fn cohen_sutherland(image: Image, p0: Point, p1: Point, color: Rgba, boundar
     new_image
 }
 
-// pub fn render_3d_object(
-//     mut image: Image,
-//     range_y: Edge,
-//     range_x: Edge,
-//     color: Rgba,
-//     object_type: u16,
-// ) -> (Image, Vec<HomogeneousEdge>) {
-//     let mut rendered_object = get_object(range_y, range_x, color, object_type);
-//     // objects.append(&mut get_object(range_y, range_x, color, 2));
-//     // objects.append(&mut get_object(range_y, range_x, color, 3));
-//     // objects.append(&mut get_object(range_y, range_x, color, 4));
-//     // objects.append(&mut get_object(range_y, range_x, color, 5));
-//     let temp_buffer:Vec<ObjectPoint> = apply_z_buffer(rendered_object);
-//     image = print_objects_in_screen(image, temp_buffer);
-//     (image, rendered_object)
-// }
+// Code for the 2 part of the assignment
+// Code for the 2 part of the assignment
+// Code for the 2 part of the assignment
+// Code for the 2 part of the assignment
+// Code for the 2 part of the assignment
 
+fn is_similar_color(color1: Rgba, color2: Rgba, tolerance: f64) -> bool {
+    let r1 = f64::from(color1[0]);
+    let g1 = f64::from(color1[1]);
+    let b1 = f64::from(color1[2]);
+    let r2 = f64::from(color2[0]);
+    let g2 = f64::from(color2[1]);
+    let b2 = f64::from(color2[2]);
+    let delta_r = (r1 - r2).abs();
+    let delta_g = (g1 - g2).abs();
+    let delta_b = (b1 - b2).abs();
+    let max = 255.0;
+    let delta_r = delta_r / max;
+    let delta_g = delta_g / max;
+    let delta_b = delta_b / max;
+    let delta = (delta_r + delta_g + delta_b) / 3.0;
+    delta < tolerance
+}
+
+fn get_neighbors_4(point: Point) -> Vec<Point> {
+    let mut neighbors: Vec<Point> = Vec::new();
+    let x = point.0;
+    let y = point.1;
+    for i in -1..2 {
+        for j in -1..2 {
+            if i == 0 && j == 0 {
+                continue;
+            }
+            if i == 0 || j == 0 {
+                neighbors.push((x + i, y + j));
+            }
+        }
+    }
+    neighbors
+}
+
+fn get_neighbors_8(point: Point) -> Vec<Point> {
+    let mut neighbors: Vec<Point> = Vec::new();
+    let x = point.0;
+    let y = point.1;
+    for i in -1..2 {
+        for j in -1..2 {
+            if i == 0 && j == 0 {
+                continue;
+            }
+            neighbors.push((x + i, y + j));
+        }
+    }
+    neighbors
+}
+
+pub fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> Image {
+    let mut new_image: Image = image.clone();
+    let height = image.len();
+    let width = image[0].len();
+    // fill the region that is 5% similar to the color of the point.
+    let tolerance = 0.05;
+
+    let old_color = new_image[p0.1 as usize][p0.0 as usize];
+    let mut queue: Vec<Point> = Vec::new();
+
+    let get_neighbors = match n4 {
+        true => get_neighbors_4,
+        false => get_neighbors_8,
+    };
+
+    queue.push(p0);
+    while queue.len() > 0 {
+        let point = queue.pop().unwrap();
+        let (x, y) = point;
+
+        if new_image[y as usize][x as usize] == color {
+            continue;
+        }
+
+        new_image[y as usize][x as usize] = color;
+
+        let neighbors = get_neighbors(point);
+
+        for neighbor in neighbors {
+            if neighbor.0 >= 0
+                && neighbor.0 < width as i32
+                && neighbor.1 >= 0
+                && neighbor.1 < height as i32
+            {
+                let neighbor_color = new_image[neighbor.1 as usize][neighbor.0 as usize];
+                if !neighbor_color.eq(&color)
+                    && is_similar_color(neighbor_color, old_color, tolerance)
+                {
+                    queue.push(neighbor);
+                }
+            }
+        }
+    }
+
+    new_image
+}
+
+//create a 3d object via a rotation sweep
+pub fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> Image {
+    let mut new_image: Image = image.clone();
+    let mut points_to_sweep: Vec<Point> = vec![];
+    let (xl, xr) = (0, image[0].len() as i32);
+    let (yt, yb) = (0, image.len() as i32);
+
+    //get the points to sweep
+    for y in yt..yb {
+        for x in xl..xr {
+            if new_image[y as usize][x as usize] == color {
+                points_to_sweep.push((x, y));
+            }
+        }
+    }
+
+    for point in points_to_sweep {
+        draw_circle_bresenham_helper(&mut new_image, &(0, 0), &point, &color);
+    }
+
+    new_image
+}
+
+//apply the z-buffer to a set of points
 fn z_buffer(object: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
     let mut buffered_points: Vec<ObjectPoint> = vec![];
     for point in object{
@@ -799,6 +791,7 @@ fn z_buffer(object: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
     buffered_points
 }
 
+//print a 3d object in 2d
 pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Image{
     let z_buffered_objects:Vec<ObjectPoint> = z_buffer(points);
     for point in z_buffered_objects{
@@ -818,6 +811,7 @@ pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Im
 //     rendered_objects
 // }
 
+//get an type of object
 pub fn get_object(
     object_type: u16,
 ) -> Vec<ObjectPoint> {
@@ -830,15 +824,16 @@ pub fn get_object(
 
 //return various objects to test in the z-buffer
 fn get_z_buffer_objects() -> Vec<ObjectPoint>{
-    let mut rendered_objects = generate_object_1(0, 20, 0, 40, [0,255, 0, 0]);
-    rendered_objects.append(&mut generate_object_2(0, 20, 0, 80, [0,255, 0, 0]));
-    rendered_objects.append(&mut generate_object_3(0, 20, 0, 40, [0,255, 0, 0]));
-    rendered_objects.append(&mut generate_object_4(0, 40, 0, 80, [255, 255, 0, 0]));
-    rendered_objects.append(&mut generate_object_5(20, (0, 0), [255, 0, 0, 0]));
+    let mut rendered_objects = generate_object_1(0, 20, 0, 40, [0,255, 0, 1]);
+    rendered_objects.append(&mut generate_object_2(0, 20, 0, 80, [0,255, 0, 1]));
+    rendered_objects.append(&mut generate_object_3(0, 20, 0, 40, [0,255, 0, 1]));
+    rendered_objects.append(&mut generate_object_4(0, 40, 0, 80, [255, 255, 0, 1]));
+    rendered_objects.append(&mut generate_object_5(20, (0, 0), [255, 255, 255, 1]));
     // rendered_objects.append(&mut z_buffer_cube());
     rendered_objects
 }
 
+//create a curve which is defined by z=x^2 + y
 fn generate_object_1(
     min_x: i32,
     max_x: i32,
@@ -847,7 +842,7 @@ fn generate_object_1(
     color: Rgba,
 ) -> Vec<ObjectPoint> {
     let mut new_object: Vec<ObjectPoint> = vec![];
-    let (mut min_x, mut max_x, mut min_y, mut max_y) = (
+    let (mut min_x, max_x, mut min_y, max_y) = (
         f64::from(min_x),
         f64::from(max_x),
         f64::from(min_y),
@@ -870,6 +865,7 @@ fn generate_object_1(
     new_object
 }
 
+//create a curve which is defined by z=3x-2y+5
 fn generate_object_2(
     min_x: i32,
     max_x: i32,
@@ -887,6 +883,10 @@ fn generate_object_2(
     new_object
 }
 
+//create a curve that is defined by
+//x = 30+cos(a)t
+//y = 50+sen(a)t
+//z = 10 + t
 fn generate_object_3(
     min_a: i32,
     max_a: i32,
@@ -909,6 +909,10 @@ fn generate_object_3(
     new_object
 }
 
+//create a curve that is defined by
+//x = 100+30cos(a)cos(b)
+//y = 50+30cos(a)sen(b)
+//z = 20+30sen(a)
 fn generate_object_4(
     min_a: i32,
     max_a: i32,
@@ -931,6 +935,7 @@ fn generate_object_4(
     new_object
 }
 
+//create a cube
 fn generate_object_5(side: i32, center: Point, color: Rgba) -> Vec<ObjectPoint> {
     // square of side 40, centered at the origin
     let mut new_object: Vec<ObjectPoint> = vec![];
@@ -1063,6 +1068,7 @@ pub fn translate_3d_object(
     new_points
 }
 
+//create a ramp
 fn get_object_ramp() -> Vec<ObjectPoint>{
     let mut rendered_objects = get_object_plane_xy((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0]);
     rendered_objects.append(&mut get_object_plane_xz((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 1]));
@@ -1082,16 +1088,18 @@ fn get_object_sphere(center: HomogeneousPoint, radius: f64, color: Rgba) -> Vec<
     while i < 2.*PI{
         let mut j = 0.;
         while j < 2.*PI{
-            let new_point:HomogeneousPoint = (center.0 + radius*delta_theta.sin()*delta_phi.cos(), center.1+ radius*delta_theta.sin()*delta_phi.sin(), center.2 + radius*delta_theta.cos(), center.3);
+            let new_point:HomogeneousPoint = (center.0 + radius*i.sin()*j.cos(), center.1+ radius*i.sin()*j.sin(), center.2 + radius*i.cos(), center.3);
             rendered_sphere.push((new_point, color));
+            j+=delta_phi;
         }
+        i+=delta_theta;
     }
     rendered_sphere
 }
 
 fn get_object_plane_xy(initial_translation: HomogeneousPoint, range_x: Point, range_y: Point, color: Rgba) -> Vec<ObjectPoint>{
     let mut new_object: Vec<ObjectPoint> = vec![];
-    let (mut min_x, mut max_x, mut min_y, mut max_y) = (
+    let (mut min_x, max_x, mut min_y, max_y) = (
         f64::from(range_x.0),
         f64::from(range_x.1),
         f64::from(range_y.0),
@@ -1116,7 +1124,7 @@ fn get_object_plane_xy(initial_translation: HomogeneousPoint, range_x: Point, ra
 
 fn get_object_plane_xz(initial_translation: HomogeneousPoint, range_x: Point, range_z: Point, color: Rgba) -> Vec<ObjectPoint>{
     let mut new_object: Vec<ObjectPoint> = vec![];
-    let (mut min_x, mut max_x, mut min_z, mut max_z) = (
+    let (mut min_x, max_x, mut min_z, max_z) = (
         f64::from(range_x.0),
         f64::from(range_x.1),
         f64::from(range_z.0),
@@ -1141,7 +1149,7 @@ fn get_object_plane_xz(initial_translation: HomogeneousPoint, range_x: Point, ra
 
 fn get_object_plane_yz(initial_translation: HomogeneousPoint, range_y: Point, range_z: Point, color: Rgba) -> Vec<ObjectPoint>{
     let mut new_object: Vec<ObjectPoint> = vec![];
-    let (mut min_y, mut max_y, mut min_z, mut max_z) = (
+    let (mut min_y, max_y, mut min_z, max_z) = (
         f64::from(range_y.0),
         f64::from(range_y.1),
         f64::from(range_z.0),
@@ -1169,33 +1177,6 @@ fn get_object_plane_declined(initial_translation: HomogeneousPoint, range_1: Poi
     new_object
 }
 
-fn illumination_model_1(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, observer_pos: HomogeneousPoint) -> Vec<ObjectPoint>{
-    let mut illuminated_object:Vec<ObjectPoint> = vec![];
-    for point in rendered_objects{
-        let normal:HomogeneousPoint = (0., 0., 1., 1.);
-        let cosine = calculate_angle(observer_pos, normal);
-        let old_color = point.1;
-        let illumination:f64 = ia*ka + il*kd*cosine;
-        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
-        illuminated_object.push((point.0, new_color));
-    }
-    illuminated_object
-}
-
-fn illumination_model_2(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, lamp_pos: HomogeneousPoint, n: f64) -> Vec<ObjectPoint>{
-    let mut illuminated_object:Vec<ObjectPoint> = vec![];
-    for point in rendered_objects{
-        let normal:HomogeneousPoint = (0., 0., 1., 1.);
-        let cosine_delta = calculate_angle(observer_pos, normal);
-        let cosine_alfa = calculate_angle(lamp_pos, normal);
-        let old_color = point.1;
-        let illumination:f64 = ia*ka + il*(kd*cosine_delta + ks*cosine_alfa.powf(n));
-        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
-        illuminated_object.push((point.0, new_color));
-    }
-    illuminated_object
-}
-
 fn array_norm(arr: ArrayBase<OwnedRepr<f64>, Dim<[usize; 1]>>) -> f64{
     let mut norm:f64 = 0.;
     let len = arr.len();
@@ -1221,7 +1202,45 @@ fn calculate_angle(obs_pos: HomogeneousPoint, normal: HomogeneousPoint) -> f64{
     cos_delta
 }
 
-fn illumination_model_1_sphere(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, center:HomogeneousPoint) -> Vec<ObjectPoint>{
+fn calculate_distance(point_1: HomogeneousPoint, point_2: HomogeneousPoint) -> f64{
+    let diff = arr1(&[
+        point_1.0/point_1.3 - point_2.0/point_2.3, 
+        point_1.1/point_1.3 - point_2.1/point_2.3, 
+        point_1.2/point_1.3 - point_2.2/point_2.3 , 
+        1.
+    ]);
+    let distance = array_norm(diff);
+    distance
+}
+
+fn illumination_model_1(rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, observer_pos: HomogeneousPoint) -> Vec<ObjectPoint>{
+    let mut illuminated_object:Vec<ObjectPoint> = vec![];
+    for point in rendered_objects{
+        let normal:HomogeneousPoint = (0., 0., 1., 1.);
+        let cosine = calculate_angle(observer_pos, normal);
+        let old_color = point.1;
+        let illumination:f64 = ia*ka + il*kd*cosine;
+        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
+        illuminated_object.push((point.0, new_color));
+    }
+    illuminated_object
+}
+
+fn illumination_model_2(rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, lamp_pos: HomogeneousPoint, n: f64) -> Vec<ObjectPoint>{
+    let mut illuminated_object:Vec<ObjectPoint> = vec![];
+    for point in rendered_objects{
+        let normal:HomogeneousPoint = (0., 0., 1., 1.);
+        let cosine_delta = calculate_angle(observer_pos, normal);
+        let cosine_alfa = calculate_angle(lamp_pos, normal);
+        let old_color = point.1;
+        let illumination:f64 = ia*ka + il*(kd*cosine_delta + ks*cosine_alfa.powf(n));
+        let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
+        illuminated_object.push((point.0, new_color));
+    }
+    illuminated_object
+}
+
+fn illumination_model_1_sphere(rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, observer_pos: HomogeneousPoint, center:HomogeneousPoint) -> Vec<ObjectPoint>{
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects{
         let normal:HomogeneousPoint = point.0;
@@ -1234,13 +1253,14 @@ fn illumination_model_1_sphere(mut rendered_objects: Vec<ObjectPoint>, ia: f64, 
     illuminated_object
 }
 
-fn illumination_model_2_sphere(mut rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, lamp_pos: HomogeneousPoint, center:HomogeneousPoint, n: f64) -> Vec<ObjectPoint>{
+fn illumination_model_2_sphere(rendered_objects: Vec<ObjectPoint>, ia: f64, ka: f64, il: f64, kd: f64, ks: f64, observer_pos: HomogeneousPoint, lamp_pos: HomogeneousPoint, center:HomogeneousPoint, n: f64) -> Vec<ObjectPoint>{
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects{
         let normal:HomogeneousPoint = point.0;
         let cosine_delta = calculate_angle(observer_pos, normal);
         let cosine_alfa = calculate_angle(lamp_pos, normal);
         let old_color = point.1;
+        let d:f64 = calculate_distance(point.0, observer_pos);
         let illumination:f64 = ia*ka + il*(kd*cosine_delta+ks*cosine_alfa.powf(n));
         let new_color:Rgba = [(old_color[0] as f64 * illumination) as u8, (old_color[1] as f64 * illumination) as u8, (old_color[2] as f64 * illumination) as u8, old_color[3]];
         illuminated_object.push((point.0, new_color));
@@ -1248,19 +1268,18 @@ fn illumination_model_2_sphere(mut rendered_objects: Vec<ObjectPoint>, ia: f64, 
     illuminated_object
 }
 
-pub fn apply_luminosity(mut image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2: f64, ks_2: f64, ia: f64, ka: f64, il:f64, n:f64) -> Image{
+pub fn apply_luminosity(image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2: f64, ks_2: f64, ia: f64, ka: f64, il:f64, n:f64) -> Image{
     let center:HomogeneousPoint = (0., 0., 0., 0.);
     let radius = 50.;
     let lamp_pos:HomogeneousPoint = (100., 0., 100., 1.);
     let observer_pos: HomogeneousPoint = (0., 0., 100., 1.);
-    let range: HomogeneousEdge = ((0., 0., 0., 1.),(100., 100., 0., 1.));
     let mut rendered_objects = get_object_plane_xy((0., 0., 0., 0.), (0, 100), (0, 100), [0, 0, 255, 1]);
     let mut rendered_sphere = get_object_sphere(center, radius, [255, 0, 255, 1]);
 
     match model{
         1 => {
             rendered_objects = illumination_model_1(rendered_objects, ia, ka, il, kd_1, observer_pos);
-            rendered_sphere = illumination_model_1_sphere(rendered_sphere, ia, ka, il, kd_2, ks_2, observer_pos, center);
+            rendered_sphere = illumination_model_1_sphere(rendered_sphere, ia, ka, il, kd_2, observer_pos, center);
         }
         2 => {
             rendered_objects = illumination_model_2(rendered_objects, ia, ka, il, kd_1, ks_1, observer_pos, lamp_pos, n);
