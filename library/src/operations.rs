@@ -750,6 +750,20 @@ pub fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> Image {
     new_image
 }
 
+//get the points where an circunference will be drawed
+fn get_local_minimun_maximun(sweeped_points: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
+    let min_max:Vec<ObjectPoint> = vec![];
+    
+    let mut searching_max: bool = false;
+    // if(sweeped_points.get(0).){
+
+    // }
+    // for point in sweeped_points{
+
+    // }
+    min_max
+}
+
 //create a 3d object via a rotation sweep
 pub fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
@@ -762,14 +776,16 @@ pub fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> Image {
         for x in xl..xr {
             if new_image[y as usize][x as usize] == color {
                 points_to_sweep.push((x, y));
+                //points_to_sweep.push(((x as f64, y as f64, 0., 1.), color));
             }
         }
     }
+    
+    // for i in 0.. 360{
+    //     points_to_sweep.append(&mut rotate_3d_object(&points_to_sweep, i as f64, plane, true));
+    // }
 
-    for point in points_to_sweep {
-        draw_circle_bresenham_helper(&mut new_image, &(0, 0), &point, &color);
-    }
-
+    // new_image = print_objects_in_screen(image, points_to_sweep);
     new_image
 }
 
@@ -794,9 +810,13 @@ fn z_buffer(object: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
 //print a 3d object in 2d
 pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Image{
     let z_buffered_objects:Vec<ObjectPoint> = z_buffer(points);
+    let height = image.len();
+    let width = image[0].len();
     for point in z_buffered_objects{
         let new_point = homogeneous_point_to_point(point.0);
-        image[new_point.0 as usize][new_point.1 as usize] = point.1;
+        if new_point.0 >= 0 && new_point.0 < width as i32 && new_point.1 >= 0 && new_point.1 < height as i32 {
+            image[new_point.1 as usize][new_point.0 as usize] = point.1;
+        }
     }
     image
 }
