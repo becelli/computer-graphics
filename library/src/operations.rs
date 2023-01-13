@@ -1076,7 +1076,7 @@ fn get_object_ramp() -> Vec<ObjectPoint>{
     rendered_objects.append(&mut get_object_plane_yz((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 1]));
     rendered_objects.append(&mut get_object_plane_xy((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 1]));
     rendered_objects.append(&mut get_object_plane_xy((100.,0.,0.,1.), (0,20),  (0,40), [150, 75, 0, 1]));
-    rendered_objects.append(&mut get_object_plane_declined((100.,0.,0.,1.), (0,60),  (0,20), [0, 0, 255, 1]));
+    rendered_objects.append(&mut get_object_plane_declined((100.,0.,0.,1.), (0,80),  (0,40), [0, 0, 255, 1]));
     rendered_objects
 }
 
@@ -1172,8 +1172,29 @@ fn get_object_plane_yz(initial_translation: HomogeneousPoint, range_y: Point, ra
     new_object
 }
 
-fn get_object_plane_declined(initial_translation: HomogeneousPoint, range_1: Point, range_2: Point, color: Rgba) -> Vec<ObjectPoint>{
-    let new_object:Vec<ObjectPoint> = vec![];
+//create a declined plane
+fn get_object_plane_declined(initial_translation: HomogeneousPoint, range_x: Point, range_y: Point, color: Rgba) -> Vec<ObjectPoint>{
+    let mut new_object: Vec<ObjectPoint> = vec![];
+    let (mut min_x, max_x, mut min_y, max_y) = (
+        f64::from(range_x.0),
+        f64::from(range_x.1),
+        f64::from(range_y.0),
+        f64::from(range_y.1),
+    );
+    let delta = 0.01;
+    while min_y <= max_y {
+        while min_x <= max_x {
+            let new_point: HomogeneousPoint = (
+                min_x + initial_translation.0,
+                min_y + initial_translation.1,
+                -min_x + initial_translation.2,
+                1.,
+            );
+            new_object.push((new_point, color) as ObjectPoint);
+            min_x += delta;
+        }
+        min_y += delta;
+    }
     new_object
 }
 
