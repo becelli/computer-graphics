@@ -410,7 +410,7 @@ pub fn rotate_object(
 ) -> (Image, Vec<HomogeneousEdge>) {
     let transformation_matrix = get_rotation_matrix_3d(&edges, degrees, axis, center);
 
-    //applying the transformation for each point in edge
+    //applying the transformation for each point in edged
     let new_edges: Vec<HomogeneousEdge> = apply_transformation(&edges, transformation_matrix);
 
     // let new_edges_clone = new_edges.clone();
@@ -846,10 +846,10 @@ pub fn get_object(
 
 //return various objects to test in the z-buffer
 fn get_z_buffer_objects() -> Vec<ObjectPoint>{
-    let mut rendered_objects = generate_object_1(0, 20, 0, 40, [1, 255, 0, 1]);
-    rendered_objects.append(&mut generate_object_2(0, 20, 0, 80, [0,255, 0, 1]));
-    rendered_objects.append(&mut generate_object_3(0, 20, 0, 40, [0,255, 0, 1]));
-    rendered_objects.append(&mut generate_object_4(0, 40, 0, 80, [255, 255, 0, 1]));
+    let mut rendered_objects = generate_object_1(0, 20, 0, 40, [0, 255, 0, 255]);
+    rendered_objects.append(&mut generate_object_2(0, 20, 0, 80, [0,255, 0, 255]));
+    rendered_objects.append(&mut generate_object_3(0, 20, 0, 40, [0,255, 0, 255]));
+    rendered_objects.append(&mut generate_object_4(0, 40, 0, 80, [255, 255, 0, 255]));
     rendered_objects.append(&mut generate_object_5(20, (0, 0), [255, 255, 255, 1]));
     // rendered_objects.append(&mut z_buffer_cube());
     rendered_objects
@@ -877,7 +877,7 @@ fn generate_object_1(
                 min_x.into(),
                 min_y.into(),
                 (min_x * min_x + min_y).into(),
-                1.,
+                1.
             );
             new_object.push((new_point, color) as ObjectPoint);
             min_y += delta;
