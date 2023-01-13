@@ -102,12 +102,11 @@ fn rotate_object(
     ))
 }
 
-//in order to use print a 3d object in screen, you first need to get an object using an get_x_object method
+//in order to use print a 3d object in screen, you first need to get an object using the get_object method
 //then you print the object with the method print objects_in_screen
-
 #[pyfunction]
-fn get_z_buffer_objects() -> PyResult<Vec<ObjectPoint>> {
-    Ok(operations::get_z_buffer_objects())
+fn get_object(object_type: u16) -> PyResult<Vec<ObjectPoint>> {
+    Ok(operations::get_object(object_type))
 }
 
 #[pyfunction]
@@ -144,11 +143,18 @@ fn rotate_3d_object(
 }
 
 #[pyfunction]
-fn apply_luminosity(mut image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2: f64, ks_2: f64, ia: f64, ka: f64, il:f64, n:f64) -> PyResult<Image>{
+fn apply_luminosity(image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2: f64, ks_2: f64, ia: f64, ka: f64, il:f64, n:f64) -> PyResult<Image>{
     Ok(operations::apply_luminosity(
         image, model, kd_1, ks_1, kd_2, ks_2, ia, ka, il, n
     ))
 }
+
+#[pyfunction]
+fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> PyResult<Image>{
+    Ok(operations::rotate_plane_sweep(
+        image, plane, color
+    ))
+} 
 
 #[pymodule]
 fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -165,10 +171,11 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(scale_object, m)?)?;
     m.add_function(wrap_pyfunction!(shear_object, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_object, m)?)?;
-    m.add_function(wrap_pyfunction!(get_z_buffer_objects, m)?)?;
+    m.add_function(wrap_pyfunction!(get_object, m)?)?;
     m.add_function(wrap_pyfunction!(print_objects_in_screen, m)?)?;
     m.add_function(wrap_pyfunction!(translate_3d_object, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_3d_object, m)?)?;
     m.add_function(wrap_pyfunction!(apply_luminosity, m)?)?;
+    m.add_function(wrap_pyfunction!(rotate_plane_sweep, m)?)?;
     Ok(())
 }

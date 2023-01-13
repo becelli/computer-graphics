@@ -808,74 +808,38 @@ pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Im
     image
 }
 
-//return various objects to test in the z-buffer
-pub fn get_z_buffer_objects() -> Vec<ObjectPoint>{
-    let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
-    rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 2));
-    rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 3));
-    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 0], 4));
-    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 0], 5));
-    rendered_objects.append(&mut z_buffer_cube());
-    rendered_objects
-}
+// //return a cube to be visualized in the z-buffer
+// fn z_buffer_cube() -> Vec<ObjectPoint>{
+//     let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
+//     rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 2));
+//     rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 3));
+//     rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 0], 4));
+//     rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 0], 5));
+//     rendered_objects
+// }
 
-//return various objects to test in the z-buffer
-fn z_buffer_cube() -> Vec<ObjectPoint>{
-    let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
-    rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 2));
-    rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 3));
-    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,40),  (0,80), [255, 255, 0, 0], 4));
-    rendered_objects.append(&mut get_object((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 0], 5));
-    rendered_objects
-}
-
-fn get_object(
-    initial_translation: HomogeneousPoint,
-    range_1: Point,
-    range_2: Point,
-    color: Rgba,
+pub fn get_object(
     object_type: u16,
 ) -> Vec<ObjectPoint> {
-    let mut new_object: Vec<ObjectPoint> = match object_type {
-        1 => generate_object_1(
-            initial_translation,
-            range_1.0,
-            range_1.1,
-            range_2.0,
-            range_2.1,
-            color,
-        ),
-        2 => generate_object_2(
-            initial_translation,
-            range_1.0,
-            range_1.1,
-            range_2.0,
-            range_2.1,
-            color,
-        ),
-        3 => generate_object_3(
-            initial_translation,
-            range_1.0,
-            range_1.1,
-            range_2.0,
-            range_2.1,
-            color,
-        ),
-        4 => generate_object_4(
-            initial_translation,
-            range_1.0,
-            range_1.1,
-            range_2.0,
-            range_2.1,
-            color,
-        ),
-        _ => generate_object_5(20, (0, 0), color),
+    let new_object: Vec<ObjectPoint> = match object_type {
+        1 => get_z_buffer_objects(),
+        _ => get_object_ramp(),
     };
     new_object
 }
 
+//return various objects to test in the z-buffer
+fn get_z_buffer_objects() -> Vec<ObjectPoint>{
+    let mut rendered_objects = generate_object_1(0, 20, 0, 40, [0,255, 0, 0]);
+    rendered_objects.append(&mut generate_object_2(0, 20, 0, 80, [0,255, 0, 0]));
+    rendered_objects.append(&mut generate_object_3(0, 20, 0, 40, [0,255, 0, 0]));
+    rendered_objects.append(&mut generate_object_4(0, 40, 0, 80, [255, 255, 0, 0]));
+    rendered_objects.append(&mut generate_object_5(20, (0, 0), [255, 0, 0, 0]));
+    // rendered_objects.append(&mut z_buffer_cube());
+    rendered_objects
+}
+
 fn generate_object_1(
-    initial_translation: HomogeneousPoint,
     min_x: i32,
     max_x: i32,
     min_y: i32,
@@ -907,7 +871,6 @@ fn generate_object_1(
 }
 
 fn generate_object_2(
-    initial_translation: HomogeneousPoint,
     min_x: i32,
     max_x: i32,
     min_y: i32,
@@ -925,7 +888,6 @@ fn generate_object_2(
 }
 
 fn generate_object_3(
-    initial_translation: HomogeneousPoint,
     min_a: i32,
     max_a: i32,
     min_t: i32,
@@ -948,7 +910,6 @@ fn generate_object_3(
 }
 
 fn generate_object_4(
-    initial_translation: HomogeneousPoint,
     min_a: i32,
     max_a: i32,
     min_t: i32,
@@ -1005,7 +966,7 @@ fn calculate_center_object(points: &Vec<ObjectPoint>) -> HomogeneousPoint {
     center
 }
 
-//
+//this function gets a rotation matrix for a 3d object, not a mesh like the previous function
 fn get_rotation_matrix_3d_object(
     points: &Vec<ObjectPoint>,
     rotation_degrees: f64,
@@ -1061,7 +1022,7 @@ fn get_rotation_matrix_3d_object(
     final_matrix
 }
 
-//apply the rotation matrix to the matrix
+//this function rotates an 3d object, not an mesh, like the previous rotation function
 pub fn rotate_3d_object(
     points: &Vec<ObjectPoint>,
     rotation_degrees: f64,
@@ -1069,7 +1030,7 @@ pub fn rotate_3d_object(
     rotate_around_center: bool,
 ) -> Vec<ObjectPoint> {
     let matrix = get_rotation_matrix_3d_object(points, rotation_degrees, rotation_axis, rotate_around_center);
-    let mut new_points:Vec<ObjectPoint> = vec![];
+    let mut new_points:Vec<ObjectPoint> = Vec::new();
     for point in points{
         let product = arr1(&[
             point.0.0 as f64,
@@ -1094,7 +1055,7 @@ pub fn translate_3d_object(
     points: &Vec<ObjectPoint>,
     movement: HomogeneousPoint,
 ) -> Vec<ObjectPoint> {
-    let mut new_points:Vec<ObjectPoint> = vec![];
+    let mut new_points:Vec<ObjectPoint> = Vec::new();
     for point in points{
         let translated_point:HomogeneousPoint = (point.0.0 + movement.0, point.0.1 + movement.1, point.0.2 + movement.2, 1.);
         new_points.push((translated_point, point.1));
@@ -1102,7 +1063,7 @@ pub fn translate_3d_object(
     new_points
 }
 
-pub fn get_object_ramp() -> Vec<ObjectPoint>{
+fn get_object_ramp() -> Vec<ObjectPoint>{
     let mut rendered_objects = get_object_plane_xy((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0]);
     rendered_objects.append(&mut get_object_plane_xz((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 1]));
     rendered_objects.append(&mut get_object_plane_xy((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 1]));
@@ -1110,19 +1071,19 @@ pub fn get_object_ramp() -> Vec<ObjectPoint>{
     rendered_objects.append(&mut get_object_plane_xy((20.,0.,0.,1.), (0,80),  (0,40), [255, 0, 0, 1]));
     rendered_objects.append(&mut get_object_plane_xy((100.,0.,0.,1.), (0,20),  (0,40), [150, 75, 0, 1]));
     rendered_objects.append(&mut get_object_plane_declined((100.,0.,0.,1.), (0,60),  (0,20), [0, 0, 255, 1]));
-    
     rendered_objects
 }
 
-fn get_object_sphere(center: HomogeneousPoint, radius: f64) -> Vec<ObjectPoint>{
+fn get_object_sphere(center: HomogeneousPoint, radius: f64, color: Rgba) -> Vec<ObjectPoint>{
     let delta_theta = 2.*PI/(100.*radius);
     let delta_phi = radius/100.;
     let mut i = 0.;
-    let mut rendered_sphere = vec![];
+    let mut rendered_sphere:Vec<ObjectPoint> = Vec::new();
     while i < 2.*PI{
         let mut j = 0.;
         while j < 2.*PI{
             let new_point:HomogeneousPoint = (center.0 + radius*delta_theta.sin()*delta_phi.cos(), center.1+ radius*delta_theta.sin()*delta_phi.sin(), center.2 + radius*delta_theta.cos(), center.3);
+            rendered_sphere.push((new_point, color));
         }
     }
     rendered_sphere
@@ -1294,7 +1255,7 @@ pub fn apply_luminosity(mut image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2:
     let observer_pos: HomogeneousPoint = (0., 0., 100., 1.);
     let range: HomogeneousEdge = ((0., 0., 0., 1.),(100., 100., 0., 1.));
     let mut rendered_objects = get_object_plane_xy((0., 0., 0., 0.), (0, 100), (0, 100), [0, 0, 255, 1]);
-    let mut rendered_sphere = get_object_sphere(center, radius);
+    let mut rendered_sphere = get_object_sphere(center, radius, [255, 0, 255, 1]);
 
     match model{
         1 => {
