@@ -154,7 +154,7 @@ fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> PyResult<Image>
     Ok(operations::rotate_plane_sweep(
         image, plane, color
     ))
-} 
+}
 
 #[pymodule]
 fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
