@@ -102,11 +102,12 @@ fn rotate_object(
     ))
 }
 
-
+//in order to use print a 3d object in screen, you first need to get an object using an get_x_object method
+//then you print the object with the method print objects_in_screen
 
 #[pyfunction]
-fn z_buffer_objects() -> PyResult<Vec<ObjectPoint>> {
-    Ok(operations::z_buffer_objects())
+fn get_z_buffer_objects() -> PyResult<Vec<ObjectPoint>> {
+    Ok(operations::get_z_buffer_objects())
 }
 
 #[pyfunction]
@@ -118,6 +119,8 @@ fn print_objects_in_screen(
     ))
 }
 
+//the same applies when using the translation/rotation functions
+//first get the object, then apply the desired transformation and then print the object in screen
 #[pyfunction]
 fn translate_3d_object(
     points: Vec<ObjectPoint>,
@@ -162,7 +165,7 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(scale_object, m)?)?;
     m.add_function(wrap_pyfunction!(shear_object, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_object, m)?)?;
-    m.add_function(wrap_pyfunction!(z_buffer_objects, m)?)?;
+    m.add_function(wrap_pyfunction!(get_z_buffer_objects, m)?)?;
     m.add_function(wrap_pyfunction!(print_objects_in_screen, m)?)?;
     m.add_function(wrap_pyfunction!(translate_3d_object, m)?)?;
     m.add_function(wrap_pyfunction!(rotate_3d_object, m)?)?;

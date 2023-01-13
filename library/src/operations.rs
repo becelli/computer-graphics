@@ -789,7 +789,7 @@ fn z_buffer(object: Vec<ObjectPoint>) -> Vec<ObjectPoint>{
         let length = buffered_points.len();
         for i in 0..length{
             let b_point = buffered_points[i].0;
-            if b_point.0 == h_point.0 && b_point.1 == h_point.1 && b_point.2 > h_point.2 {
+            if b_point.0 as i32 == h_point.0 as i32 && b_point.1 as i32 == h_point.1 as i32 && b_point.2 > h_point.2 {
                 buffered_points.remove(i);
                 break;
             }
@@ -809,7 +809,7 @@ pub fn print_objects_in_screen(mut image: Image, points: Vec<ObjectPoint>) -> Im
 }
 
 //return various objects to test in the z-buffer
-pub fn z_buffer_objects() -> Vec<ObjectPoint>{
+pub fn get_z_buffer_objects() -> Vec<ObjectPoint>{
     let mut rendered_objects = get_object((0.,0.,0.,1.), (0, 20), (0, 40), [0,255, 0, 0], 1);
     rendered_objects.append(&mut get_object((0.,0.,0., 1.), (0, 20), (0, 80), [0,255, 0, 0], 2));
     rendered_objects.append(&mut get_object((0.,0.,80.,1.), (0, 20), (0, 40), [0,255, 0, 0], 3));
