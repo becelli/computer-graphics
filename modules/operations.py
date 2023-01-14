@@ -151,18 +151,39 @@ class Operations:
         return img, edges_result
 
     @staticmethod
-    def get_objects(index=1):
+    def get_objects(index=1) -> list:
         objects = cglib.get_object(index)
-
         return objects
 
     @staticmethod
-    def print_objects_in_screen(image: QImage, edges: list):
+    def print_objects_in_screen(image: QImage, edges: list) -> QImage:
         w, h = image.width(), image.height()
 
         image = Operations.get_img_pixels(image, w, h)
 
         image_result = cglib.print_objects_in_screen(image=image, points=edges)
+        new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
+        img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
+
+        return img
+
+    @staticmethod
+    def rotate_3d_object(edges: list, axis: str, angle: np.float64, around_itself: bool) -> list:
+
+        rotated_edges = cglib.rotate_3d_object(
+            points=edges,  degrees=angle, axis=axis, around_itself=around_itself)
+
+        return rotated_edges
+
+    @staticmethod
+    def apply_luminosity(image: QImage, model: bool, kd_1, ks_1, kd_2, ks_2, k, ia, ka, il, n):
+        w, h = image.width(), image.height()
+
+        image = Operations.get_img_pixels(image, w, h)
+
+        image_result = cglib.apply_luminosity(
+            image=image, model=model, kd_1=kd_1, ks_1=ks_1, kd_2=kd_2, ks_2=ks_2, k=k, ia=ia, ka=ka, il=il, n=n)
+
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
 

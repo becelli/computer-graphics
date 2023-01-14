@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QLabel, QLineEdit, QRadioButton, QPushButton
-from PyQt5.QtGui import QFont, QRegExpValidator, QPixmap
+from PyQt5.QtGui import QFont, QRegExpValidator, QPixmap, QColor
 from PyQt5.QtCore import Qt, QRegExp
 from gui.qt_override import QGrid, QChildWindow, display_grid_on_window
 import numpy as np
@@ -16,8 +16,9 @@ class ZBuffer(QChildWindow):
 
         self.translations = np.array([0.0, 0.0, 0.0], dtype=np.float64)
         self.rotation_axis: str = "x"
-        self.rotation_angle: np.float64 = np.float64(0.0)
+        self.rotation_angle: np.float64 = np.float64(30)
         self.self_center: bool = False
+        self.use_ramp: bool = False
 
         self.canvas = QLabel()
         self.backup_pixmap: QPixmap = None
@@ -27,12 +28,8 @@ class ZBuffer(QChildWindow):
 
         # Radio buttons
         self.radios = {
-            "LOCAL_SCALE": QRadioButton("Local"),
-            "GLOBAL_SCALE": QRadioButton("Global"),
-            "TRANSLATE": QRadioButton("Translate"),
             "ORIGIN_ROTATE": QRadioButton("Origin of canvas"),
             "CENTER_ROTATE": QRadioButton("Center of object"),
-            "SHEAR": QRadioButton("Shear"),
         }
 
         self.show_content()
@@ -43,8 +40,7 @@ class ZBuffer(QChildWindow):
 
         image_canvas = qto.get_image_from_canvas(self.canvas)
 
-        # Shear takes a 4x4 matrix. We'll use the identity matrix for the reset
-        edges = Operations.get_objects()
+        edges = Operations.get_objects(1 if self.use_ramp else 0)
         img = Operations.print_objects_in_screen(image_canvas, edges)
 
         self.canvas.setPixmap(QPixmap.fromImage(img))
@@ -63,14 +59,13 @@ class ZBuffer(QChildWindow):
         self.canvas.setPixmap(self.backup_pixmap)
         image_canvas = qto.get_image_from_canvas(self.canvas)
         if selected_radio == self.radios["ORIGIN_ROTATE"]:
-            img, edges = Operations.rotate(
-                image_canvas, self.new_edges, self.rotation_axis, self.rotation_angle, False)
+            edges = Operations.rotate_3d_object(
+                self.new_edges, self.rotation_axis, self.rotation_angle, False)
+            img = Operations.print_objects_in_screen(image_canvas, edges)
         elif selected_radio == self.radios["CENTER_ROTATE"]:
-            img, edges = Operations.rotate(
-                image_canvas, self.new_edges, self.rotation_axis, self.rotation_angle, True)
-        elif selected_radio == self.radios["TRANSLATE"]:
-            img, edges = Operations.translate(
-                image_canvas, self.new_edges, self.translations)
+            edges = Operations.rotate_3d_object(
+                self.new_edges, self.rotation_axis, self.rotation_angle, True)
+            img = Operations.print_objects_in_screen(image_canvas, edges)
         else:
             return
 
@@ -105,6 +100,10 @@ class ZBuffer(QChildWindow):
         except ValueError:
             pass
 
+    def switch_image(self):
+        self.use_ramp = not self.use_ramp
+        self.reset()
+
     def show_content(self) -> None:
 
         window = QChildWindow(self.parent, "ZBuffer")
@@ -112,63 +111,17 @@ class ZBuffer(QChildWindow):
         grid.setSpacing(10)
 
         # Canvas on left, controls on right
-        w, h = 720, 720
-        self.canvas = qto.create_canvas(w, h)
+        w, h = 500, 500
+
+        self.canvas = qto.create_canvas(w, h, QColor(0, 0, 0))
         self.backup_pixmap = QPixmap(self.canvas.pixmap())
         self.reset()
-        grid.addWidget(self.canvas, 0, 0, 6, 1)
+        grid.addWidget(self.canvas, 0, 0, 5, 4)
 
-        # Translation
-        translation_label = QLabel("Translation")
-        translation_label.setFont(QFont("Arial", 12, QFont.Bold))
-        translation_label.setAlignment(Qt.AlignCenter)
-        grid.addWidget(translation_label, 0, 1)
-
-        # X translation
-        x_label = QLabel("X")
-        x_label.setAlignment(Qt.AlignCenter)
-        x_input_t = QLineEdit()
-        x_input_t.setAlignment(Qt.AlignCenter)
-        x_input_t.setValidator(self.float_validator)
-        x_input_t.setText(str(self.translations[0]))
-        x_input_t.textEdited.connect(
-            lambda: self.set_translation("x", x_input_t.text()))
-        grid.addWidget(x_label, 0, 2)
-        grid.addWidget(x_input_t, 1, 2)
-
-        # Y translation
-        y_label = QLabel("Y")
-        y_label.setAlignment(Qt.AlignCenter)
-        y_input_t = QLineEdit()
-        y_input_t.setAlignment(Qt.AlignCenter)
-        y_input_t.setValidator(self.float_validator)
-        y_input_t.setText(str(self.translations[1]))
-        y_input_t.textEdited.connect(
-            lambda: self.set_translation("y", y_input_t.text()))
-        grid.addWidget(y_label, 0, 3)
-        grid.addWidget(y_input_t, 1, 3)
-
-        # Z translation
-        z_label = QLabel("Z")
-        z_label.setAlignment(Qt.AlignCenter)
-        z_input_t = QLineEdit()
-        z_input_t.setAlignment(Qt.AlignCenter)
-        z_input_t.setValidator(self.float_validator)
-        z_input_t.setText(str(self.translations[2]))
-        z_input_t.textEdited.connect(
-            lambda: self.set_translation("z", z_input_t.text()))
-        grid.addWidget(z_label, 0, 4)
-        grid.addWidget(z_input_t, 1, 4)
-
-        self.radios["TRANSLATE"].clicked.connect(
-            lambda: self.set_radio_selected("TRANSLATE"))
-        grid.addWidget(self.radios["TRANSLATE"], 1, 1)
-
-        # Rotation
         rotation_label = QLabel("Rotation")
         rotation_label.setFont(QFont("Arial", 12, QFont.Bold))
         rotation_label.setAlignment(Qt.AlignCenter)
-        grid.addWidget(rotation_label, 2, 1)
+        grid.addWidget(rotation_label, 5, 0, 1, 1)
 
         # Origin radio
         self.radios["ORIGIN_ROTATE"].clicked.connect(
@@ -176,8 +129,10 @@ class ZBuffer(QChildWindow):
         self.radios["CENTER_ROTATE"].clicked.connect(
             lambda: self.set_radio_selected("CENTER_ROTATE"))
 
-        grid.addWidget(self.radios["ORIGIN_ROTATE"], 3, 1)
-        grid.addWidget(self.radios["CENTER_ROTATE"], 4, 1)
+        self.radios["CENTER_ROTATE"].setChecked(True)
+
+        grid.addWidget(self.radios["ORIGIN_ROTATE"], 5, 1)
+        grid.addWidget(self.radios["CENTER_ROTATE"], 6, 1)
 
         # Axis
         axis_label = QLabel("Axis")
@@ -189,8 +144,8 @@ class ZBuffer(QChildWindow):
         axis_input.textEdited.connect(
             lambda: self.set_rotation_axis(axis_input.text()))
         axis_input.textEdited.emit(axis_input.text())
-        grid.addWidget(axis_label, 3, 2)
-        grid.addWidget(axis_input, 3, 3)
+        grid.addWidget(axis_label, 5, 2)
+        grid.addWidget(axis_input, 5, 3)
 
         # Angle
         angle_label = QLabel("Angle (deg)")
@@ -201,21 +156,26 @@ class ZBuffer(QChildWindow):
         angle_input.setText(str(self.rotation_angle))
         angle_input.textEdited.connect(
             lambda: self.set_rotation_angle(angle_input.text()))
-        grid.addWidget(angle_label, 4, 2)
-        grid.addWidget(angle_input, 4, 3)
+        grid.addWidget(angle_label, 6, 2)
+        grid.addWidget(angle_input, 6, 3)
+
+        # Switch image button
+        switch_button = QPushButton("Switch image")
+        switch_button.clicked.connect(lambda: self.switch_image())
+        grid.addWidget(switch_button, 7, 0)
 
         # Reset button
         reset_button = QPushButton("Reset")
         reset_button.clicked.connect(lambda: self.reset())
-        grid.addWidget(reset_button, 5, 1, 1, 2)
+        grid.addWidget(reset_button, 7, 1)
 
         # Apply button
         apply_button = QPushButton("Apply")
         apply_button.clicked.connect(lambda: self.apply())
-        grid.addWidget(apply_button, 5, 3, 1, 2)
+        grid.addWidget(apply_button, 7, 2)
 
-        grid.setRowStretch(5, 1)
-        grid.setColumnStretch(4, 1)
+        grid.setColumnStretch(0, 1)
+        grid.setRowStretch(0, 1)
 
         # add padding
         grid.setContentsMargins(20, 20, 20, 20)
