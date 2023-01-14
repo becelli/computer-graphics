@@ -754,34 +754,33 @@ pub fn edge_fill(
     min_y: i32,
     max_y: i32,
 ) -> Image {
-    todo!()
+    todo!();
     // let mut new_image: Image = image.clone();
     // for i in min_x..max_x {
     //     for j in min_y..max_y {
-    // let height = image.len();
-    // let width = image[0].len();
-    // // fill the region that is 5% similar to the color of the point.
-    // let tolerance = 0.05;
+    //         let height = image.len();
+    //         let width = image[0].len();
+    //         // fill the region that is 5% similar to the color of the point.
+    //         let tolerance = 0.05;
 
-    // let old_color = new_image[p0.1 as usize][p0.0 as usize];
+    //         let old_color = new_image[p0.1 as usize][p0.0 as usize];
 
-    // let (x, y) = (i, j);
+    //         let (x, y) = (i, j);
 
-    // if new_image[y as usize][x as usize] == color {
-    //     continue;
-    // }
+    //         if new_image[y as usize][x as usize] == color {
+    //             continue;
+    //         }
 
-    // new_image[y as usize][x as usize] = color;
+    //         new_image[y as usize][x as usize] = color;
 
-    // let neighbor_color = new_image[neighbor.1 as usize][neighbor.0 as usize];
-    // if !neighbor_color.eq(&color) && is_similar_color(neighbor_color, old_color, tolerance)
-    // {
-    //     queue.push(neighbor);
-    // }
+    //         let neighbor_color = new_image[neighbor.1 as usize][neighbor.0 as usize];
+    //         if !neighbor_color.eq(&color) && is_similar_color(neighbor_color, old_color, tolerance){
+                
+    //         }
     //     }
     // }
 
-    // image
+    image
 }
 
 //create a 3d object via a rotation sweep
@@ -892,12 +891,6 @@ fn generate_object_1(
     color: Rgba,
 ) -> Vec<ObjectPoint> {
     let mut new_object: Vec<ObjectPoint> = vec![];
-    // for x in min_x..=max_x {
-    //     for y in min_y..=max_y {
-    //         let new_point: HomogeneousPoint = (x.into(), y.into(), (x * x + y).into(), 1.);
-    //         new_object.push((new_point, color) as ObjectPoint);
-    //     }
-    // }
     let delta = 0.1;
     let mut current_x = min_x as f64;
     while current_x <= max_x as f64 {
@@ -949,18 +942,6 @@ fn generate_object_3(
 ) -> Vec<ObjectPoint> {
     let mut new_object: Vec<ObjectPoint> = Vec::new();
     for t in min_t..=max_t {
-        // for a in min_a..=max_a {
-        //     let new_point: HomogeneousPoint = (
-        //         (30.0 + f64::from(a).to_radians().cos() * f64::from(t)).into(),
-        //         (50.0 + f64::from(a).to_radians().sin() * f64::from(t)).into(),
-        //         (10.0 + f64::from(t)).into(),
-        //         1.,
-        //     );
-        //     new_object.push((new_point, color) as ObjectPoint);
-        // }
-
-        // rewrite the above code using radians
-
         let mut current_a = min_a;
         loop {
             let new_point: HomogeneousPoint = (
@@ -993,18 +974,6 @@ fn generate_object_4(
     color: Rgba,
 ) -> Vec<ObjectPoint> {
     let mut new_object: Vec<ObjectPoint> = Vec::new();
-    // for t in min_t..=max_t {
-    //     for a in min_a..=max_a {
-    //         let new_point: HomogeneousPoint = (
-    //             (30. + f64::from(a).to_radians().cos() * f64::from(t)).into(),
-    //             (50. + f64::from(a).to_radians().sin() * f64::from(t)).into(),
-    //             (10 + t).into(),
-    //             1.,
-    //         );
-    //         new_object.push((new_point, color) as ObjectPoint);
-    //     }
-    // }
-
     let mut current_b = min_b;
     loop {
         let mut current_a = min_a;
