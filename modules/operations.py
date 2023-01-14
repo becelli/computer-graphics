@@ -26,7 +26,8 @@ class Operations:
     def create_new_image(self, width=320, height=240):
         return QImage(width, height, QImage.Format.Format_RGBA8888)
 
-    def qcolor_to_rgb(self, color: QColor):
+    @staticmethod
+    def qcolor_to_rgb(color: QColor):
         return [color.red(), color.green(), color.blue(), color.alpha()]
 
     def get_default_elements_to_filters(self) -> tuple:
@@ -56,13 +57,13 @@ class Operations:
 
     def draw_line(self, **kwargs):
         p0, p1 = kwargs['points']
-        color = self.qcolor_to_rgb(kwargs['color'])
+        color = Operations.qcolor_to_rgb(kwargs['color'])
 
         return self.default_filter(cglib.draw_line, p0=p0, p1=p1, color=color)
 
     def draw_line_bresenham(self, **kwargs):
         p0, p1 = kwargs['points']
-        color = self.qcolor_to_rgb(kwargs['color'])
+        color = Operations.qcolor_to_rgb(kwargs['color'])
 
         selection_points = kwargs['selection_points']
         if len(selection_points) == 2:
@@ -76,30 +77,35 @@ class Operations:
 
     def draw_circle(self, **kwargs):
         p0, p1 = kwargs['points']
-        color = self.qcolor_to_rgb(kwargs['color'])
+        color = Operations.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.draw_circle, p0=p0, p1=p1, color=color)
 
     def draw_circle_bresenham(self, **kwargs):
         p0, p1 = kwargs['points']
-        color = self.qcolor_to_rgb(kwargs['color'])
+        color = Operations.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.draw_circle_bresenham, p0=p0, p1=p1, color=color)
 
     def draw_circle_parametric(self, **kwargs):
         p0, p1 = kwargs['points']
-        color = self.qcolor_to_rgb(kwargs['color'])
+        color = Operations.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.draw_circle_parametric, p0=p0, p1=p1, color=color)
 
     def draw_triangle(self, **kwargs):
         p0, p1, p2 = kwargs['points']
-        color = self.qcolor_to_rgb(kwargs['color'])
+        color = Operations.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.draw_triangle, p0=p0, p1=p1, p2=p2, color=color)
 
     def flood_fill(self, **kwargs):
         p0 = kwargs['point']
         neighbors = kwargs['neighbors']
         n4 = False if neighbors == 8 else True
-        color = self.qcolor_to_rgb(kwargs['color'])
+        color = Operations.qcolor_to_rgb(kwargs['color'])
         return self.default_filter(cglib.flood_fill, p0=p0, color=color, n4=n4)
+
+    def edge_fill(self, **kwargs):
+        # p0 = kwargs['point']
+        color = Operations.qcolor_to_rgb(kwargs['color'])
+        return self.default_filter(cglib.edge_fill, color=color)
 
     @staticmethod
     def shear(image: QImage, edges: list, matrix: np.ndarray) -> tuple[QImage, list]:
@@ -190,12 +196,13 @@ class Operations:
         return img
 
     @staticmethod
-    def rotate_plane_sweep(image: QImage, color=[0, 0, 0, 255]) -> QImage:
+    def rotate_plane_sweep(image: QImage, color: QColor) -> QImage:
         w, h = image.width(), image.height()
 
+        new_color = Operations.qcolor_to_rgb(color)
         image = Operations.get_img_pixels(image, w, h)
 
-        image_result = cglib.rotate_plane_sweep(image=image, color=color)
+        image_result = cglib.rotate_plane_sweep(image=image, color=new_color)
 
         new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
         img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
@@ -218,6 +225,7 @@ class CG():
             OPCODE.DRAW_TRIANGLE: self.f.draw_triangle,
             OPCODE.FLOOD_FILL_4: self.f.flood_fill,
             OPCODE.FLOOD_FILL_8: self.f.flood_fill,
+            OPCODE.EDGE_FILL: self.f.edge_fill,
         }
 
         if code in all_operations:

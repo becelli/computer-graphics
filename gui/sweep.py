@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QLabel, QPushButton
-from PyQt5.QtGui import QFont, QRegExpValidator, QPixmap, QColor, QPen, QBrush, QImage, QPainter, QMouseEvent
+from PyQt5.QtGui import QPixmap, QColor, QPen, QPainter, QMouseEvent
 from gui.qt_override import QGrid, QChildWindow, display_grid_on_window
 import gui.qt_override as qto
 from modules.operations import Operations
@@ -12,17 +12,21 @@ class Sweep(QChildWindow):
         self.input_canvas = QLabel()
         self.result_canvas = QLabel()
         self.initial_pixmap: QPixmap = None
+        self.should_draw = False
+        self.background_color = QColor(0, 0, 0)
+        self.foreground_color = QColor(255, 255, 255)
+
+        self.bar_color = QColor(128, 128, 128)
 
         self.show_content()
         self.enable_draw()
 
     def reset(self):
-        print("Resetting")
 
         initial_pixmap = QPixmap(self.initial_pixmap)
         # add a vertical line to the middle of the image
         painter = QPainter(initial_pixmap)
-        painter.setPen(QPen(QColor(128, 128, 128), 1))
+        painter.setPen(QPen(self.bar_color, 1))
         painter.drawLine(int(initial_pixmap.width() / 2), 0,
                          int(initial_pixmap.width() / 2), initial_pixmap.height())
         painter.end()
@@ -31,20 +35,28 @@ class Sweep(QChildWindow):
         self.result_canvas.setPixmap(self.initial_pixmap)
 
     def apply(self):
-        print("Applying")
+
         image_canvas = qto.get_image_from_canvas(self.input_canvas)
-        img = Operations.rotate_plane_sweep(image_canvas)
+        img = Operations.rotate_plane_sweep(
+            image_canvas, self.foreground_color)
         self.result_canvas.setPixmap(QPixmap.fromImage(img))
 
     def enable_draw(self):
         pen = QPen()
-        pen.setColor(QColor(0, 0, 0))
+        pen.setColor(self.foreground_color)
         pen.setWidth(1)
 
         self.input_canvas.setMouseTracking(True)
         self.input_canvas.mouseMoveEvent = lambda event: self.draw(event, pen)
+        self.input_canvas.mousePressEvent = lambda _: setattr(
+            self, "should_draw", True)
+        self.input_canvas.mouseReleaseEvent = lambda _: setattr(
+            self, "should_draw", False)
 
     def draw(self, event: QMouseEvent, pen: QPen = None) -> None:
+        if not self.should_draw:
+            return
+
         x, y = event.pos().x(), event.pos().y()
         pixmap = QPixmap(self.input_canvas.pixmap())
         w = pixmap.width()
@@ -66,8 +78,8 @@ class Sweep(QChildWindow):
         # Canvas on left, controls on right
         w, h = 450, 450
 
-        self.input_canvas = qto.create_canvas(w, h, QColor(255, 255, 255))
-        self.result_canvas = qto.create_canvas(w, h, QColor(255, 255, 255))
+        self.input_canvas = qto.create_canvas(w, h, self.background_color)
+        self.result_canvas = qto.create_canvas(w, h, self.background_color)
         self.initial_pixmap = QPixmap(self.result_canvas.pixmap())
         self.reset()
 

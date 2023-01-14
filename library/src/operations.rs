@@ -744,40 +744,72 @@ pub fn flood_fill(image: Image, p0: Point, color: Rgba, n4: bool) -> Image {
     new_image
 }
 
-#[allow(dead_code)]
-#[allow(unused_variables)]
-pub fn edge_fill(
-    image: Image,
-    color: Rgba,
-    min_x: i32,
-    max_x: i32,
-    min_y: i32,
-    max_y: i32,
-) -> Image {
+fn get_bounding_box(image: &Image, color: &Rgba) -> (i32, i32, i32, i32) {
+    let (min_x, max_x, min_y, max_y) = image
+        .iter()
+        .enumerate()
+        .flat_map(|(y, row)| {
+            row.iter()
+                .enumerate()
+                .filter(|(_, pixel)| pixel.eq(&color))
+                .map(move |(x, _)| (x as i32, y as i32))
+        })
+        .fold(
+            (std::i32::MAX, std::i32::MIN, std::i32::MAX, std::i32::MIN),
+            |(min_x, max_x, min_y, max_y), (x, y)| {
+                (min_x.min(x), max_x.max(x), min_y.min(y), max_y.max(y))
+            },
+        );
+    (min_x - 1, max_x + 1, min_y - 1, max_y + 1)
+}
+
+pub fn edge_fill(image: Image, color: Rgba) -> Image {
     let mut new_image: Image = image.clone();
-    let mut to_draw: bool = false;
-    let width = image[0].len();
-    let height = image.len();
-    for i in min_x..max_x {
-        for j in min_y..max_y {
-            // fill the region that is 5% similar to the color of the point.
-            let tolerance = 0.05;
+    let (min_x, max_x, min_y, max_y) = get_bounding_box(&image, &color);
 
+    for i in min_x + 1..max_x {
+        let is_horizontal_line: bool;
+        let mut still_in_borders: bool = false;
+        let mut count = 0;
+        for j in min_y + 1..max_y {
             let old_color = new_image[j as usize][i as usize];
-
-            let (x, y) = (i, j);
-
-            if !old_color.eq(&color) && !is_similar_color(color, old_color, tolerance) {
-                if to_draw {
-                    new_image[y as usize][x as usize] = color;
+            if old_color.eq(&color) {
+                if !still_in_borders {
+                    count += 1;
                 }
+                still_in_borders = true;
             } else {
-                to_draw = !to_draw;
+                still_in_borders = false;
+            }
+        }
+        is_horizontal_line = if count >= 2 { false } else { true };
+
+        if !is_horizontal_line {
+            let mut is_inside: bool = false;
+            let mut still_in_borders: bool = false;
+            for j in min_y + 1..max_y {
+                let old_color = new_image[j as usize][i as usize];
+
+                let (x, y) = (i, j);
+
+                if !old_color.eq(&color) {
+                    if is_inside {
+                        new_image[y as usize][x as usize] = color;
+                    }
+                    if still_in_borders {
+                        still_in_borders = false;
+                    }
+                } else {
+                    if !still_in_borders {
+                        is_inside = !is_inside;
+                    }
+                    still_in_borders = true;
+                }
             }
         }
     }
 
-    image
+    new_image
 }
 
 //create a 3d object via a rotation sweep
@@ -794,7 +826,8 @@ pub fn rotate_plane_sweep(image: Image, color: Rgba) -> Image {
                 let point: ObjectPoint =
                     ((((width / 2) - x).abs() as f64, y as f64, 0., 1.), color);
                 points_to_sweep.push(point);
-                new_image[y as usize][x as usize] = [255, 255, 255, 255] as Rgba;
+                new_image[y as usize][x as usize] =
+                    [255 - color[0], 255 - color[1], 255 - color[2], 255];
             }
         }
     }
@@ -818,8 +851,6 @@ pub fn rotate_plane_sweep(image: Image, color: Rgba) -> Image {
 
 //apply the z-buffer to a set of points
 fn z_buffer(object: Vec<ObjectPoint>) -> HashMap<(i32, i32), ObjectPoint> {
-    let start = Instant::now();
-    let len = object.len();
     let mut buffered_points: HashMap<(i32, i32), ObjectPoint> = HashMap::new();
 
     for point in object {
@@ -829,7 +860,7 @@ fn z_buffer(object: Vec<ObjectPoint>) -> HashMap<(i32, i32), ObjectPoint> {
             buffered_points.insert((h_point.0 as i32, h_point.1 as i32), point);
         }
     }
-    println!("Time to buffer {} points: {:?}", len, start.elapsed());
+
     buffered_points
 }
 
@@ -842,10 +873,12 @@ pub fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>, invert: b
     for point in z_buffered_objects.values() {
         let new_point = homogeneous_point_to_point(point.0);
         let color = point.1;
-        if new_point.0 >= 0 && new_point.0 < width && new_point.1 >= 0 && new_point.1 < height {
-            if invert {
+        if invert {
+            if new_point.0 >= 0 && new_point.0 < width && new_point.1 > 0 && new_point.1 <= height {
                 new_image[(height - new_point.1) as usize][(new_point.0) as usize] = color;
-            } else {
+            }
+        } else {
+            if new_point.0 >= 0 && new_point.0 < width && new_point.1 >= 0 && new_point.1 < height {
                 new_image[(new_point.1) as usize][(new_point.0) as usize] = color;
             }
         }
@@ -1405,8 +1438,6 @@ fn illumination_model_2(
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects {
         let normal: HomogeneousPoint = (0., 0., 1., 1.);
-        // let cosine_delta = calculate_angle(observer_pos, normal);
-        // let cosine_alfa = calculate_angle(lamp_pos, normal);
         let cosine_alfa = calculate_angle(observer_pos, lamp_pos);
         let cosine_delta = calculate_angle(lamp_pos, normal);
 
@@ -1465,8 +1496,6 @@ fn illumination_model_2_sphere(
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects {
         let normal: HomogeneousPoint = point.0;
-        // let cosine_delta = calculate_angle(observer_pos, normal);
-        // let cosine_alfa = calculate_angle(lamp_pos, normal);
         let cosine_alfa = calculate_angle(observer_pos, lamp_pos);
         let cosine_delta = calculate_angle(lamp_pos, normal);
         let old_color = point.1;

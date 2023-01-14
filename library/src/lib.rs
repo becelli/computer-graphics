@@ -159,6 +159,11 @@ fn apply_luminosity(
 }
 
 #[pyfunction]
+fn edge_fill(image: Image, color: Rgba) -> PyResult<Image> {
+    Ok(operations::edge_fill(image, color))
+}
+
+#[pyfunction]
 fn rotate_plane_sweep(image: Image, color: Rgba) -> PyResult<Image> {
     Ok(operations::rotate_plane_sweep(image, color))
 }
@@ -172,6 +177,7 @@ fn cglib(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(draw_circle_parametric, m)?)?;
     m.add_function(wrap_pyfunction!(draw_triangle, m)?)?;
     m.add_function(wrap_pyfunction!(flood_fill, m)?)?;
+    m.add_function(wrap_pyfunction!(edge_fill, m)?)?;
     m.add_function(wrap_pyfunction!(select_area, m)?)?;
     m.add_function(wrap_pyfunction!(cohen_sutherland, m)?)?;
     m.add_function(wrap_pyfunction!(translate_object, m)?)?;

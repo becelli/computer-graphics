@@ -2,14 +2,13 @@ import numpy as np
 
 
 from random import randint as rdint
-from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QPushButton, QMenu, QColorDialog, QWidget, QSizePolicy
-from PyQt5.QtGui import QPixmap, QImage, QFont, QGuiApplication, QMouseEvent, QIcon, QPainter, QPen, QBrush, QColor
+from PyQt5.QtWidgets import QLabel, QMainWindow, QPushButton, QColorDialog, QSizePolicy
+from PyQt5.QtGui import QPixmap, QImage, QMouseEvent, QIcon, QPainter, QPen, QColor
 from PyQt5.QtCore import Qt
 from modules.operations import CG
 import gui.qt_override as qto
 from gui.window import setup as w_setup, menubar as w_menubar
 from gui.window.types import OPCODE, Point
-from gui.sweep import Sweep
 
 TWO_POINTS_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_CIRCLE,
                          OPCODE.DRAW_LINE_BRESENHAM, OPCODE.DRAW_CIRCLE_BRESENHAM, OPCODE.DRAW_CIRCLE_PARAMETRIC]
@@ -20,7 +19,7 @@ LINE_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_LINE_BRESENHAM]
 class Application(QMainWindow):
     def __init__(self):
         super().__init__()
-        Sweep(self)
+
         self.canvas: QLabel = None
         self.backup_pixmap: QPixmap = None
         self.operation: int = OPCODE.NONE
@@ -134,6 +133,14 @@ class Application(QMainWindow):
         self.buttons.append(flood_fill_8_button)
         toolbar.addWidget(flood_fill_8_button)
 
+        edge_fill_button = QPushButton()
+        edge_fill_button.setIcon(QIcon("icons/edge-fill.svg"))
+        edge_fill_button.setToolTip("Edge Fill Algorithm")
+        edge_fill_button.clicked.connect(
+            lambda: self.select_button(edge_fill_button, OPCODE.EDGE_FILL))
+        self.buttons.append(edge_fill_button)
+        toolbar.addWidget(edge_fill_button)
+
         selection_area_button = QPushButton()
         selection_area_button.setIcon(QIcon("icons/selection.svg"))
         selection_area_button.setToolTip("Selection Area")
@@ -207,6 +214,13 @@ class Application(QMainWindow):
             point = Point(event.x(), event.y())
             self.CGLIB.apply(
                 self.operation, point=point, color=self.primary_color, neighbors=8)
+            self.backup_pixmap = QPixmap(self.canvas.pixmap())
+            return
+
+        if self.operation == OPCODE.EDGE_FILL:
+            point = Point(event.x(), event.y())
+            self.CGLIB.apply(
+                self.operation, point=point, color=self.primary_color)
             self.backup_pixmap = QPixmap(self.canvas.pixmap())
             return
 
