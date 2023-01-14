@@ -110,12 +110,8 @@ fn get_object(object_type: u16) -> PyResult<Vec<ObjectPoint>> {
 }
 
 #[pyfunction]
-fn print_objects_in_screen(
-    image: Image, points: Vec<ObjectPoint>
-) -> PyResult<Image> {
-    Ok(operations::print_objects_in_screen(
-        image, points
-    ))
+fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>) -> PyResult<Image> {
+    Ok(operations::print_objects_in_screen(image, points))
 }
 
 //the same applies when using the translation/rotation functions
@@ -124,36 +120,47 @@ fn print_objects_in_screen(
 fn translate_3d_object(
     points: Vec<ObjectPoint>,
     movement: HomogeneousPoint,
-) -> PyResult<Vec<ObjectPoint>>{
-    Ok(operations::translate_3d_object(
-        &points, movement
-    ))
+) -> PyResult<Vec<ObjectPoint>> {
+    Ok(operations::translate_3d_object(&points, movement))
 }
 
 #[pyfunction]
 fn rotate_3d_object(
     points: Vec<ObjectPoint>,
-    rotation_degrees: f64,
-    rotation_axis: char,
-    rotate_around_center: bool,
+    degrees: f64,
+    axis: char,
+    around_itself: bool,
 ) -> PyResult<Vec<ObjectPoint>> {
     Ok(operations::rotate_3d_object(
-        &points, rotation_degrees, rotation_axis, rotate_around_center
+        &points,
+        degrees,
+        axis,
+        around_itself,
     ))
 }
 
 #[pyfunction]
-fn apply_luminosity(image: Image, model:i32, kd_1: f64, ks_1: f64, kd_2: f64, ks_2: f64, ia: f64, ka: f64, il:f64, n:f64) -> PyResult<Image>{
+fn apply_luminosity(
+    image: Image,
+    model: bool,
+    kd_1: f64,
+    ks_1: f64,
+    kd_2: f64,
+    ks_2: f64,
+    k: f64,
+    ia: f64,
+    ka: f64,
+    il: f64,
+    n: f64,
+) -> PyResult<Image> {
     Ok(operations::apply_luminosity(
-        image, model, kd_1, ks_1, kd_2, ks_2, ia, ka, il, n
+        image, model, kd_1, ks_1, kd_2, ks_2, k, ia, ka, il, n,
     ))
 }
 
 #[pyfunction]
-fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> PyResult<Image>{
-    Ok(operations::rotate_plane_sweep(
-        image, plane, color
-    ))
+fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> PyResult<Image> {
+    Ok(operations::rotate_plane_sweep(image, plane, color))
 }
 
 #[pymodule]
