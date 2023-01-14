@@ -189,6 +189,19 @@ class Operations:
 
         return img
 
+    @staticmethod
+    def rotate_plane_sweep(image: QImage, color=[0, 0, 0, 255]) -> QImage:
+        w, h = image.width(), image.height()
+
+        image = Operations.get_img_pixels(image, w, h)
+
+        image_result = cglib.rotate_plane_sweep(image=image, color=color)
+
+        new_image = np.array(image_result, dtype=np.uint8).astype(np.uint8)
+        img = QImage(new_image, w, h, QImage.Format.Format_RGBA8888)
+
+        return img
+
 
 class CG():
     def __init__(self, canvas: QLabel):

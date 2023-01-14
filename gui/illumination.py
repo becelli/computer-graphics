@@ -17,20 +17,21 @@ class Illumination(QChildWindow):
         self.float_validator = QRegExpValidator(QRegExp(r"[-]?\d*\.?\d*"))
         self.axis_validator = QRegExpValidator(QRegExp("[xXyYzZ]"))
 
-        self.kd_1: np.float64 = np.float64(1)
-        self.ks_1: np.float64 = np.float64(1)
-        self.kd_2: np.float64 = np.float64(1)
-        self.ks_2: np.float64 = np.float64(1)
-        self.k: np.float64 = np.float64(1)
-        self.ia: np.float64 = np.float64(1)
-        self.ka: np.float64 = np.float64(1)
-        self.il: np.float64 = np.float64(1)
-        self.n: np.float64 = np.float64(1)
+        self.kd_1: np.float64 = np.float64(0.7)
+        self.kd_2: np.float64 = np.float64(0.3)
+        self.ks_1: np.float64 = np.float64(0.4)
+        self.ks_2: np.float64 = np.float64(0.8)
+        self.k: np.float64 = 5
+        self.ia: np.float64 = 1
+        self.ka: np.float64 = 0.5
+        self.il: np.float64 = 1
+        self.n: np.float64 = 5
 
         # Radio buttons
         self.radios = {
             "MODEL_1": QRadioButton("Model 1"),
             "MODEL_2": QRadioButton("Model 2"),
+            "FLAT": QRadioButton("Flat"),
         }
         self.show_content()
 
@@ -39,7 +40,7 @@ class Illumination(QChildWindow):
         image_canvas = qto.get_image_from_canvas(self.canvas)
 
         img = Operations.apply_luminosity(
-            image_canvas, True, kd_1=self.kd_1, ks_1=self.ks_1, kd_2=self.kd_2, ks_2=self.ks_2, k=self.k, ia=self.ia, ka=self.ka, il=self.il, n=self.n)
+            image_canvas, 0, kd_1=self.kd_1, ks_1=self.ks_1, kd_2=self.kd_2, ks_2=self.ks_2, k=self.k, ia=self.ia, ka=self.ka, il=self.il, n=self.n)
 
         self.canvas.setPixmap(QPixmap.fromImage(img))
 
@@ -53,9 +54,12 @@ class Illumination(QChildWindow):
         if selected_radio is None:
             return
 
+        selected = selected_radio.text().lower()
+        model = 0 if selected == "flat" else 1 if selected == "model 1" else 2
+
         self.canvas.setPixmap(self.backup_pixmap)
         image_canvas = qto.get_image_from_canvas(self.canvas)
-        model = True if selected_radio.text() == "Model 1" else False
+
         img = Operations.apply_luminosity(
             image_canvas, model=model, kd_1=self.kd_1, ks_1=self.ks_1, kd_2=self.kd_2, ks_2=self.ks_2, k=self.k, ia=self.ia, ka=self.ka, il=self.il, n=self.n)
 
@@ -64,6 +68,7 @@ class Illumination(QChildWindow):
     def set_radio_selected(self, radio_name: str):
         for radio in self.radios.values():
             radio.setChecked(False)
+
         self.radios[radio_name].setChecked(True)
 
     def set_variable(self, variable_name: str, value: str):
@@ -71,10 +76,6 @@ class Illumination(QChildWindow):
             self.__setattr__(variable_name, np.float64(value))
         except ValueError:
             pass
-
-    def switch_image(self):
-        self.use_ramp = not self.use_ramp
-        self.reset()
 
     def show_content(self) -> None:
 
@@ -88,19 +89,21 @@ class Illumination(QChildWindow):
         self.canvas = qto.create_canvas(w, h, QColor(0, 0, 0))
         self.backup_pixmap = QPixmap(self.canvas.pixmap())
         self.reset()
-        grid.addWidget(self.canvas, 0, 0, 5, 4)
+        grid.addWidget(self.canvas, 0, 0, 5, 5)
 
         # Origin radio
+        self.radios["FLAT"].clicked.connect(
+            lambda: self.set_radio_selected("FLAT"))
         self.radios["MODEL_1"].clicked.connect(
             lambda: self.set_radio_selected("MODEL_1"))
         self.radios["MODEL_2"].clicked.connect(
             lambda: self.set_radio_selected("MODEL_2"))
 
-        self.radios["MODEL_1"].setChecked(True)
+        self.radios["FLAT"].setChecked(True)
 
-        grid.addWidget(self.radios["MODEL_1"], 5, 0)
-        grid.addWidget(self.radios["MODEL_2"], 5, 1)
-
+        grid.addWidget(self.radios["FLAT"], 5, 0)
+        grid.addWidget(self.radios["MODEL_1"], 5, 1)
+        grid.addWidget(self.radios["MODEL_2"], 5, 2)
         kd_1_label = QLabel("Kd 1")
         kd_1_label.setAlignment(Qt.AlignCenter)
         kd_1_input = QLineEdit()
@@ -109,19 +112,8 @@ class Illumination(QChildWindow):
         kd_1_input.setText(str(self.kd_1))
         kd_1_input.textEdited.connect(
             lambda: self.set_variable("kd_1", kd_1_input.text()))
-        grid.addWidget(kd_1_label, 5, 2)
-        grid.addWidget(kd_1_input, 5, 3)
-
-        ks_1_label = QLabel("Ks 1")
-        ks_1_label.setAlignment(Qt.AlignCenter)
-        ks_1_input = QLineEdit()
-        ks_1_input.setAlignment(Qt.AlignCenter)
-        ks_1_input.setValidator(self.float_validator)
-        ks_1_input.setText(str(self.ks_1))
-        ks_1_input.textEdited.connect(
-            lambda: self.set_variable("ks_1", ks_1_input.text()))
-        grid.addWidget(ks_1_label, 6, 2)
-        grid.addWidget(ks_1_input, 6, 3)
+        grid.addWidget(kd_1_label, 5, 3)
+        grid.addWidget(kd_1_input, 5, 4)
 
         kd_2_label = QLabel("Kd 2")
         kd_2_label.setAlignment(Qt.AlignCenter)
@@ -131,8 +123,19 @@ class Illumination(QChildWindow):
         kd_2_input.setText(str(self.kd_2))
         kd_2_input.textEdited.connect(
             lambda: self.set_variable("kd_2", kd_2_input.text()))
-        grid.addWidget(kd_2_label, 7, 2)
-        grid.addWidget(kd_2_input, 7, 3)
+        grid.addWidget(kd_2_label, 6, 3)
+        grid.addWidget(kd_2_input, 6, 4)
+
+        ks_1_label = QLabel("Ks 1")
+        ks_1_label.setAlignment(Qt.AlignCenter)
+        ks_1_input = QLineEdit()
+        ks_1_input.setAlignment(Qt.AlignCenter)
+        ks_1_input.setValidator(self.float_validator)
+        ks_1_input.setText(str(self.ks_1))
+        ks_1_input.textEdited.connect(
+            lambda: self.set_variable("ks_1", ks_1_input.text()))
+        grid.addWidget(ks_1_label, 7, 3)
+        grid.addWidget(ks_1_input, 7, 4)
 
         ks_2_label = QLabel("Ks 2")
         ks_2_label.setAlignment(Qt.AlignCenter)
@@ -142,8 +145,8 @@ class Illumination(QChildWindow):
         ks_2_input.setText(str(self.ks_2))
         ks_2_input.textEdited.connect(
             lambda: self.set_variable("ks_2", ks_2_input.text()))
-        grid.addWidget(ks_2_label, 8, 2)
-        grid.addWidget(ks_2_input, 8, 3)
+        grid.addWidget(ks_2_label, 8, 3)
+        grid.addWidget(ks_2_input, 8, 4)
 
         k_label = QLabel("K")
         k_label.setAlignment(Qt.AlignCenter)
@@ -153,8 +156,8 @@ class Illumination(QChildWindow):
         k_input.setText(str(self.k))
         k_input.textEdited.connect(
             lambda: self.set_variable("k", k_input.text()))
-        grid.addWidget(k_label, 9, 2)
-        grid.addWidget(k_input, 9, 3)
+        grid.addWidget(k_label, 9, 3)
+        grid.addWidget(k_input, 9, 4)
 
         ia_label = QLabel("Ia")
         ia_label.setAlignment(Qt.AlignCenter)
@@ -164,8 +167,8 @@ class Illumination(QChildWindow):
         ia_input.setText(str(self.ia))
         ia_input.textEdited.connect(
             lambda: self.set_variable("ia", ia_input.text()))
-        grid.addWidget(ia_label, 10, 2)
-        grid.addWidget(ia_input, 10, 3)
+        grid.addWidget(ia_label, 10, 3)
+        grid.addWidget(ia_input, 10, 4)
 
         ka_label = QLabel("Ka")
         ka_label.setAlignment(Qt.AlignCenter)
@@ -175,8 +178,8 @@ class Illumination(QChildWindow):
         ka_input.setText(str(self.ka))
         ka_input.textEdited.connect(
             lambda: self.set_variable("ka", ka_input.text()))
-        grid.addWidget(ka_label, 11, 2)
-        grid.addWidget(ka_input, 11, 3)
+        grid.addWidget(ka_label, 11, 3)
+        grid.addWidget(ka_input, 11, 4)
 
         il_label = QLabel("Il")
         il_label.setAlignment(Qt.AlignCenter)
@@ -186,8 +189,8 @@ class Illumination(QChildWindow):
         il_input.setText(str(self.il))
         il_input.textEdited.connect(
             lambda: self.set_variable("il", il_input.text()))
-        grid.addWidget(il_label, 12, 2)
-        grid.addWidget(il_input, 12, 3)
+        grid.addWidget(il_label, 12, 3)
+        grid.addWidget(il_input, 12, 4)
 
         n_label = QLabel("N")
         n_label.setAlignment(Qt.AlignCenter)
@@ -197,8 +200,8 @@ class Illumination(QChildWindow):
         n_input.setText(str(self.n))
         n_input.textEdited.connect(
             lambda: self.set_variable("n", n_input.text()))
-        grid.addWidget(n_label, 13, 2)
-        grid.addWidget(n_input, 13, 3)
+        grid.addWidget(n_label, 13, 3)
+        grid.addWidget(n_input, 13, 4)
 
         # Reset button
         reset_button = QPushButton("Reset")
@@ -213,10 +216,10 @@ class Illumination(QChildWindow):
 
         grid.addWidget(apply_button, 6, 1)
 
-        grid.setColumnStretch(0, 1)
-        grid.setRowStretch(0, 1)
+        grid.setColumnStretch(5, 1)
+        grid.setRowStretch(13, 1)
 
         # add padding
-        grid.setContentsMargins(20, 20, 20, 20)
+        grid.setContentsMargins(10, 10, 10, 10)
 
         display_grid_on_window(window, grid)

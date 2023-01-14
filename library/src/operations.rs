@@ -754,61 +754,65 @@ pub fn edge_fill(
     min_y: i32,
     max_y: i32,
 ) -> Image {
-    todo!();
-    // let mut new_image: Image = image.clone();
-    // for i in min_x..max_x {
-    //     for j in min_y..max_y {
-    //         let height = image.len();
-    //         let width = image[0].len();
-    //         // fill the region that is 5% similar to the color of the point.
-    //         let tolerance = 0.05;
+    let mut new_image: Image = image.clone();
+    let mut to_draw: bool = false;
+    let width = image[0].len();
+    let height = image.len();
+    for i in min_x..max_x {
+        for j in min_y..max_y {
+            // fill the region that is 5% similar to the color of the point.
+            let tolerance = 0.05;
 
-    //         let old_color = new_image[p0.1 as usize][p0.0 as usize];
+            let old_color = new_image[j as usize][i as usize];
 
-    //         let (x, y) = (i, j);
+            let (x, y) = (i, j);
 
-    //         if new_image[y as usize][x as usize] == color {
-    //             continue;
-    //         }
-
-    //         new_image[y as usize][x as usize] = color;
-
-    //         let neighbor_color = new_image[neighbor.1 as usize][neighbor.0 as usize];
-    //         if !neighbor_color.eq(&color) && is_similar_color(neighbor_color, old_color, tolerance){
-                
-    //         }
-    //     }
-    // }
+            if !old_color.eq(&color) && !is_similar_color(color, old_color, tolerance) {
+                if to_draw {
+                    new_image[y as usize][x as usize] = color;
+                }
+            } else {
+                to_draw = !to_draw;
+            }
+        }
+    }
 
     image
 }
 
 //create a 3d object via a rotation sweep
-pub fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> Image {
+pub fn rotate_plane_sweep(image: Image, color: Rgba) -> Image {
+    let width = image[0].len() as i32;
     let mut new_image: Image = image.clone();
     let mut points_to_sweep: Vec<ObjectPoint> = vec![];
     let (xl, xr) = (0, image[0].len() as i32);
     let (yt, yb) = (0, image.len() as i32);
 
-    //get the points to sweep
-    for y in yt..yb {
-        for x in xl..xr {
+    for y in yt..yb - 1 {
+        for x in xl..xr - 1 {
             if new_image[y as usize][x as usize] == color {
-                points_to_sweep.push(((x as f64, y as f64, 0., 1.), color));
+                let point: ObjectPoint =
+                    ((((width / 2) - x).abs() as f64, y as f64, 0., 1.), color);
+                points_to_sweep.push(point);
+                new_image[y as usize][x as usize] = [255, 255, 255, 255] as Rgba;
             }
         }
     }
 
+    let mut sweeped_points = vec![];
+
     for i in 0..360 {
-        points_to_sweep.append(&mut rotate_3d_object(
-            &points_to_sweep,
-            i as f64,
-            plane,
-            true,
-        ));
+        let sweeped = &mut rotate_3d_object(&points_to_sweep, i as f64, 'y', false);
+        sweeped_points.append(sweeped);
     }
 
-    new_image = print_objects_in_screen(image, points_to_sweep);
+    // Sweeping 30 degrees in the x axis to visualize the 3d object
+    sweeped_points = rotate_3d_object(&sweeped_points, 30., 'x', false);
+    // Translate the object to the center of the screen
+    sweeped_points = translate_3d_object(&sweeped_points, ((width / 2) as f64, 0., 0., 1.));
+
+    new_image = print_objects_in_screen(new_image, sweeped_points, false);
+
     new_image
 }
 
@@ -825,16 +829,12 @@ fn z_buffer(object: Vec<ObjectPoint>) -> HashMap<(i32, i32), ObjectPoint> {
             buffered_points.insert((h_point.0 as i32, h_point.1 as i32), point);
         }
     }
-    println!(
-        "z-buffering took {} ms for {} points",
-        start.elapsed().as_millis(),
-        len
-    );
+    println!("Time to buffer {} points: {:?}", len, start.elapsed());
     buffered_points
 }
 
 //print a 3d object in 2d
-pub fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>) -> Image {
+pub fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>, invert: bool) -> Image {
     let mut new_image = image.clone();
     let z_buffered_objects = z_buffer(points);
     let height = image.len() as i32;
@@ -843,7 +843,11 @@ pub fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>) -> Image 
         let new_point = homogeneous_point_to_point(point.0);
         let color = point.1;
         if new_point.0 >= 0 && new_point.0 < width && new_point.1 >= 0 && new_point.1 < height {
-            new_image[(height- new_point.1) as usize][(new_point.0) as usize] = color;
+            if invert {
+                new_image[(height - new_point.1) as usize][(new_point.0) as usize] = color;
+            } else {
+                new_image[(new_point.1) as usize][(new_point.0) as usize] = color;
+            }
         }
     }
     new_image
@@ -1371,7 +1375,7 @@ fn illumination_model_1(
     for point in rendered_objects {
         let normal: HomogeneousPoint = (0., 0., 1., 1.);
         // let cosine = calculate_angle(observer_pos, normal);
-        let cosine = calculate_angle(normal, lamp_pos);
+        let cosine = calculate_angle(lamp_pos, normal);
         // let cosine = calculate_angle(observer_pos, lamp_pos);
         let old_color = point.1;
         let illumination: f64 = ia * ka + il * kd * cosine;
@@ -1398,7 +1402,6 @@ fn illumination_model_2(
     lamp_pos: HomogeneousPoint,
     n: f64,
 ) -> Vec<ObjectPoint> {
-    let mut count = 0;
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects {
         let normal: HomogeneousPoint = (0., 0., 1., 1.);
@@ -1406,7 +1409,7 @@ fn illumination_model_2(
         // let cosine_alfa = calculate_angle(lamp_pos, normal);
         let cosine_alfa = calculate_angle(observer_pos, lamp_pos);
         let cosine_delta = calculate_angle(lamp_pos, normal);
-        
+
         let old_color = point.1;
         let d: f64 = calculate_distance(point.0, observer_pos);
         let illumination: f64 =
@@ -1483,7 +1486,7 @@ fn illumination_model_2_sphere(
 
 pub fn apply_luminosity(
     image: Image,
-    model: bool,
+    model: u8,
     kd_1: f64,
     ks_1: f64,
     kd_2: f64,
@@ -1499,15 +1502,15 @@ pub fn apply_luminosity(
     let lamp_pos: HomogeneousPoint = (100., 0., 100., 1.);
     let observer_pos: HomogeneousPoint = (0., 0., 100., 1.);
     let rendered_objects =
-        get_object_plane_xy((0., 0., 0., 1.), (0, 100), (0, 100), [0, 0, 127, 255]);
-    let rendered_sphere = get_object_sphere(center, radius, [127, 0, 127, 255]);
+        get_object_plane_xy((0., 0., 0., 1.), (0, 100), (0, 100), [0, 0, 255, 255]);
+    let rendered_sphere = get_object_sphere(center, radius, [255, 90, 255, 255]);
 
     let (mut object, mut sphere) = match model {
-        true => (
+        1 => (
             illumination_model_1(rendered_objects, ia, ka, il, kd_1, lamp_pos),
             illumination_model_1_sphere(rendered_sphere, ia, ka, il, kd_2, lamp_pos),
         ),
-        false => (
+        2 => (
             illumination_model_2(
                 rendered_objects,
                 ia,
@@ -1533,9 +1536,10 @@ pub fn apply_luminosity(
                 n,
             ),
         ),
+        _ => (rendered_objects, rendered_sphere),
     };
 
     object.append(&mut sphere);
     object = translate_3d_object(&object, (250., 250., 0., 1.));
-    print_objects_in_screen(image, object)
+    print_objects_in_screen(image, object, true)
 }

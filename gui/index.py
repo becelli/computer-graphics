@@ -9,8 +9,7 @@ from modules.operations import CG
 import gui.qt_override as qto
 from gui.window import setup as w_setup, menubar as w_menubar
 from gui.window.types import OPCODE, Point
-from gui.z_buffer import ZBuffer
-from gui.illumination import Illumination
+from gui.sweep import Sweep
 
 TWO_POINTS_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_CIRCLE,
                          OPCODE.DRAW_LINE_BRESENHAM, OPCODE.DRAW_CIRCLE_BRESENHAM, OPCODE.DRAW_CIRCLE_PARAMETRIC]
@@ -21,7 +20,7 @@ LINE_OPERATIONS = [OPCODE.DRAW_LINE, OPCODE.DRAW_LINE_BRESENHAM]
 class Application(QMainWindow):
     def __init__(self):
         super().__init__()
-        Illumination(self)
+        Sweep(self)
         self.canvas: QLabel = None
         self.backup_pixmap: QPixmap = None
         self.operation: int = OPCODE.NONE
@@ -319,7 +318,7 @@ class Application(QMainWindow):
                 painter.drawLine(self.points[0].x, self.points[0].y,
                                  self.points[1].x, self.points[1].y)
                 painter.end()
-                self.canvas.repaint()
+                self.canvas.update()
             return
 
         self.display_current_pixel_info(event)
@@ -338,7 +337,7 @@ class Application(QMainWindow):
     def display_main_content(self):
         grid = qto.QGrid()
 
-        self.canvas = qto.create_canvas()
+        self.canvas = qto.create_canvas(500, 500)
         grid.addWidget(self.canvas, 1, 0)
         self.CGLIB = CG(self.canvas)
         self.backup_pixmap = QPixmap(self.canvas.pixmap())

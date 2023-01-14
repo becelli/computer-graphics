@@ -111,7 +111,7 @@ fn get_object(object_type: u16) -> PyResult<Vec<ObjectPoint>> {
 
 #[pyfunction]
 fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>) -> PyResult<Image> {
-    Ok(operations::print_objects_in_screen(image, points))
+    Ok(operations::print_objects_in_screen(image, points, true))
 }
 
 //the same applies when using the translation/rotation functions
@@ -142,7 +142,7 @@ fn rotate_3d_object(
 #[pyfunction]
 fn apply_luminosity(
     image: Image,
-    model: bool,
+    model: u8,
     kd_1: f64,
     ks_1: f64,
     kd_2: f64,
@@ -159,8 +159,8 @@ fn apply_luminosity(
 }
 
 #[pyfunction]
-fn rotate_plane_sweep(image: Image, plane: char, color: Rgba) -> PyResult<Image> {
-    Ok(operations::rotate_plane_sweep(image, plane, color))
+fn rotate_plane_sweep(image: Image, color: Rgba) -> PyResult<Image> {
+    Ok(operations::rotate_plane_sweep(image, color))
 }
 
 #[pymodule]

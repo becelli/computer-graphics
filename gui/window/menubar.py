@@ -3,6 +3,7 @@ from gui.color_converter import ColorConverter
 from gui.projections import Projections
 from gui.z_buffer import ZBuffer
 from gui.illumination import Illumination
+from gui.sweep import Sweep
 import gui.qt_override as qto
 from gui import fs
 
@@ -58,5 +59,6 @@ def add_actions_to_tools_menu(window: QMainWindow, tools_menu):
         MenuAction("Projections", lambda: Projections(window)),
         MenuAction("Z-Buffer", lambda: ZBuffer(window)),
         MenuAction("Illumination", lambda: Illumination(window)),
+        MenuAction("Sweep", lambda: Sweep(window)),
     )
     add_actions_to_menu(window, tools_menu, actions)
