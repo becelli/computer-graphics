@@ -844,7 +844,7 @@ pub fn print_objects_in_screen(image: Image, points: Vec<ObjectPoint>) -> Image 
         let new_point = homogeneous_point_to_point(point.0);
         let color = point.1;
         if new_point.0 >= 0 && new_point.0 < width && new_point.1 >= 0 && new_point.1 < height {
-            new_image[(new_point.1) as usize][(new_point.0) as usize] = color;
+            new_image[(height- new_point.1) as usize][(new_point.0) as usize] = color;
         }
     }
     new_image
@@ -1191,7 +1191,7 @@ pub fn translate_3d_object(
 //create a ramp
 fn get_object_ramp() -> Vec<ObjectPoint> {
     let mut rendered_objects =
-        get_object_plane_xy((0., 0., 0., 1.), (0, 20), (0, 40), [0, 255, 0, 0]);
+        get_object_plane_xy((0., 0., 0., 1.), (0, 20), (0, 40), [0, 255, 0, 255]);
     rendered_objects.append(&mut get_object_plane_xz(
         (0., 0., 0., 1.),
         (0, 20),
@@ -1234,7 +1234,7 @@ fn get_object_ramp() -> Vec<ObjectPoint> {
 
 fn get_object_sphere(center: HomogeneousPoint, radius: f64, color: Rgba) -> Vec<ObjectPoint> {
     let delta_theta = 2. * PI / (10. * radius);
-    let delta_phi = 1. / (10. * radius);
+    let delta_phi = 2. * PI / (10. * radius);
     let mut i = 0.;
     let mut rendered_sphere: Vec<ObjectPoint> = Vec::new();
     while i < 2. * PI {
@@ -1365,17 +1365,16 @@ fn get_object_plane_declined(
 
 fn array_norm(arr: ArrayBase<OwnedRepr<f64>, Dim<[usize; 1]>>) -> f64 {
     let mut norm: f64 = 0.;
-    let len = arr.len();
     for num in arr {
         norm += num * num;
     }
-    norm = norm / len as f64;
+    norm = norm.sqrt();
     norm
 }
 
-fn calculate_angle(obs_pos: HomogeneousPoint, normal: HomogeneousPoint) -> f64 {
-    let array1 = arr1(&[obs_pos.0 as f64, obs_pos.1 as f64, obs_pos.2 as f64]);
-    let array2 = arr1(&[normal.0 as f64, normal.1 as f64, normal.2 as f64]);
+fn calculate_angle(vec1: HomogeneousPoint, vec2: HomogeneousPoint) -> f64 {
+    let array1 = arr1(&[vec1.0 as f64, vec1.1 as f64, vec1.2 as f64]);
+    let array2 = arr1(&[vec2.0 as f64, vec2.1 as f64, vec2.2 as f64]);
     let cos_delta: f64 = array1.dot(&array2) / (array_norm(array1) * array_norm(array2));
     cos_delta
 }
@@ -1385,20 +1384,10 @@ fn calculate_distance(point_1: HomogeneousPoint, point_2: HomogeneousPoint) -> f
         point_1.0 / point_1.3 - point_2.0 / point_2.3,
         point_1.1 / point_1.3 - point_2.1 / point_2.3,
         point_1.2 / point_1.3 - point_2.2 / point_2.3,
-        1.,
+        0.,
     ]);
     let distance = array_norm(diff);
     distance
-}
-
-fn scalar_product(point_1: HomogeneousPoint, point_2: HomogeneousPoint) -> f64 {
-    let product = point_1.0 * point_2.0 + point_1.1 * point_2.1 + point_1.2 * point_2.2;
-    product
-}
-
-fn norm(point: HomogeneousPoint) -> f64 {
-    let norm = (point.0 * point.0 + point.1 * point.1 + point.2 * point.2).sqrt();
-    norm
 }
 
 fn illumination_model_1(
@@ -1407,14 +1396,13 @@ fn illumination_model_1(
     ka: f64,
     il: f64,
     kd: f64,
-    observer_pos: HomogeneousPoint,
     lamp_pos: HomogeneousPoint,
 ) -> Vec<ObjectPoint> {
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects {
         let normal: HomogeneousPoint = (0., 0., 1., 1.);
         // let cosine = calculate_angle(observer_pos, normal);
-        let cosine = scalar_product(normal, lamp_pos) / (norm(normal) * norm(lamp_pos));
+        let cosine = calculate_angle(normal, lamp_pos);
         // let cosine = calculate_angle(observer_pos, lamp_pos);
         let old_color = point.1;
         let illumination: f64 = ia * ka + il * kd * cosine;
@@ -1441,16 +1429,24 @@ fn illumination_model_2(
     lamp_pos: HomogeneousPoint,
     n: f64,
 ) -> Vec<ObjectPoint> {
+    let mut count = 0;
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects {
         let normal: HomogeneousPoint = (0., 0., 1., 1.);
         // let cosine_delta = calculate_angle(observer_pos, normal);
         // let cosine_alfa = calculate_angle(lamp_pos, normal);
-        let cosine_alfa = calculate_angle(observer_pos, normal);
+        let cosine_alfa = calculate_angle(observer_pos, lamp_pos);
         let cosine_delta = calculate_angle(lamp_pos, normal);
-
+        if(count % 1000 == 0){
+            print!("{}\n", cosine_delta);
+        }
+        
         let old_color = point.1;
         let d: f64 = calculate_distance(point.0, observer_pos);
+        if(count % 1000 == 0){
+            print!("{}\n", d);
+        }
+        count+=1;
         let illumination: f64 =
             ia * ka + il * (kd * cosine_delta + ks * cosine_alfa.powf(n)) / (d + k);
         let new_color: Rgba = [
@@ -1470,22 +1466,14 @@ fn illumination_model_1_sphere(
     ka: f64,
     il: f64,
     kd: f64,
-    observer_pos: HomogeneousPoint,
     lamp_pos: HomogeneousPoint,
 ) -> Vec<ObjectPoint> {
     let mut illuminated_object: Vec<ObjectPoint> = vec![];
     for point in rendered_objects {
         let normal: HomogeneousPoint = point.0;
-        let cosine = calculate_angle(observer_pos, normal);
-        // let cosine = calculate_angle(observer_pos, lamp_pos);
+        let cosine = calculate_angle(lamp_pos, normal);
         let old_color = point.1;
         let illumination: f64 = ia * ka + il * kd * cosine;
-        // print!(
-        //     "{}\n{}\n{}\n",
-        //     (old_color[0] as f64 * illumination) as u32,
-        //     (old_color[1] as f64 * illumination) as u32,
-        //     (old_color[2] as f64 * illumination) as u32
-        // );
         let new_color: Rgba = [
             (old_color[0] as f64 * illumination) as u8,
             (old_color[1] as f64 * illumination) as u8,
@@ -1514,7 +1502,7 @@ fn illumination_model_2_sphere(
         let normal: HomogeneousPoint = point.0;
         // let cosine_delta = calculate_angle(observer_pos, normal);
         // let cosine_alfa = calculate_angle(lamp_pos, normal);
-        let cosine_alfa = calculate_angle(observer_pos, normal);
+        let cosine_alfa = calculate_angle(observer_pos, lamp_pos);
         let cosine_delta = calculate_angle(lamp_pos, normal);
         let old_color = point.1;
         let d: f64 = calculate_distance(point.0, observer_pos);
@@ -1544,18 +1532,18 @@ pub fn apply_luminosity(
     il: f64,
     n: f64,
 ) -> Image {
-    let center: HomogeneousPoint = (0., 0., 0., 0.);
+    let center: HomogeneousPoint = (0., 0., 0., 1.);
     let radius = 50.;
     let lamp_pos: HomogeneousPoint = (100., 0., 100., 1.);
     let observer_pos: HomogeneousPoint = (0., 0., 100., 1.);
     let rendered_objects =
-        get_object_plane_xy((0., 0., 0., 0.), (0, 100), (0, 100), [0, 0, 127, 255]);
+        get_object_plane_xy((0., 0., 0., 1.), (0, 100), (0, 100), [0, 0, 127, 255]);
     let rendered_sphere = get_object_sphere(center, radius, [127, 0, 127, 255]);
 
     let (mut object, mut sphere) = match model {
         true => (
-            illumination_model_1(rendered_objects, ia, ka, il, kd_1, observer_pos, lamp_pos),
-            illumination_model_1_sphere(rendered_sphere, ia, ka, il, kd_2, observer_pos, lamp_pos),
+            illumination_model_1(rendered_objects, ia, ka, il, kd_1, lamp_pos),
+            illumination_model_1_sphere(rendered_sphere, ia, ka, il, kd_2, lamp_pos),
         ),
         false => (
             illumination_model_2(
