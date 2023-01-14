@@ -1437,16 +1437,9 @@ fn illumination_model_2(
         // let cosine_alfa = calculate_angle(lamp_pos, normal);
         let cosine_alfa = calculate_angle(observer_pos, lamp_pos);
         let cosine_delta = calculate_angle(lamp_pos, normal);
-        if(count % 1000 == 0){
-            print!("{}\n", cosine_delta);
-        }
         
         let old_color = point.1;
         let d: f64 = calculate_distance(point.0, observer_pos);
-        if(count % 1000 == 0){
-            print!("{}\n", d);
-        }
-        count+=1;
         let illumination: f64 =
             ia * ka + il * (kd * cosine_delta + ks * cosine_alfa.powf(n)) / (d + k);
         let new_color: Rgba = [
